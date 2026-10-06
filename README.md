@@ -7,12 +7,12 @@ it.**
 
 ## Status
 
-> **Done:** matching build (byte-identical, from assembly), compiler identified · **Currently:** mapping the binary
-> (D3) and decompiling to C · **Next:** decompiling subsystems (D4–D11), then the Rust rewrite
+> **Done:** matching build (byte-identical, from assembly), compiler identified, binary mapped (D3) ·
+> **Currently:** decompiling subsystems to C (D4–D11) · **Next:** the Rust rewrite
 
 | Phase | State |
 |---|---|
-| 1. Decompile to byte-matching C/C++ | D0–D2 done, D3 in progress. 10 functions in C and linked; the full build still matches the original SHA-1 and boots in PCSX2. |
+| 1. Decompile to byte-matching C/C++ | D0–D3 done. 12 functions in C and linked; the full build still matches the original SHA-1 and boots in PCSX2. |
 | 2. Rewrite in Rust | Not started. Starts when Phase 1 is 100%. Only the ISO extractor exists. |
 
 ## The two phases

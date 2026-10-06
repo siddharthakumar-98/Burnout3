@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""Assign .data and .rodata to the .text units, giving every unit its own data slices.
+"""Assign .data, .rodata, .sdata, .sbss and .bss to the .text units, giving every unit its own data slices.
 
 Run after configure.py has generated assembly/asm/ (plain Python 3, no container needed):
 
     python3 tools/dataslice.py               summary
-    python3 tools/dataslice.py --yaml        the .data/.rodata subsegment lines for b3.yaml
+    python3 tools/dataslice.py --yaml        the data subsegment lines for b3.yaml
 
-Both sections are laid out in link order, the same order as the units in .text (docs/layout.md). Each stream is
-cut into consecutive slices, one per unit in .text order (a unit may get none), choosing the cut points that put
-the most code references inside their own unit's slice. Only cuts at item starts (labels in the generated
-assembly) are allowed, and they are snapped to 16-byte boundaries because the generated assembly aligns items
-relative to the start of its file. An item no code references goes with the next unit when it starts on an
-8-byte boundary after the previous unit's last referenced item, since every unit's data starts aligned; otherwise
-it stays with the previous unit. Data slices that b3.yaml already carves for C units (d2/) are kept exactly.
+All five sections are laid out in link order, the same order as the units in .text (docs/layout.md). Each is cut
+into consecutive slices, one per unit in .text order (a unit may get none), choosing the cut points that put the
+most code references inside their own unit's slice. Only cuts at item starts (labels in the generated assembly)
+are allowed. In .data and .rodata they are snapped to 16-byte boundaries, because the generated assembly aligns
+items relative to the start of its file; .sdata needs 4-byte boundaries, and .sbss/.bss (only .space) none. An
+item no code references goes with the next unit when it starts on an 8-byte boundary after the previous unit's
+last referenced item, since every unit's data starts aligned; otherwise it stays with the previous unit. Data
+slices that b3.yaml already carves for C units (d2/, d3/) are kept exactly.
+
+Two pieces are not sliced: .lit4, the float literal pool the linker builds across all files (it fills the start
+of the small-data area and is not in link order), and the COMMON block at the end of .bss (uninitialized globals
+of the ee-gcc libraries newlib and lgkbm, which the linker allocates last).
 """
 
 import argparse
@@ -26,7 +31,18 @@ sys.path.insert(0, str(ROOT / "tools"))
 import xref  # noqa: E402
 
 YAML = ROOT / "assembly/splat/b3.yaml"
-STREAMS = {"data": (0x483F00, 0x4B1500), "rodata": (0x4B1500, 0x4D3E00)}
+# stream -> (start, end, cut alignment)
+STREAMS = {
+    "data": (0x483F00, 0x4B1500, 16),
+    "rodata": (0x4B1500, 0x4D3E00, 16),
+    "sdata": (0x4E1400, 0x4E2680, 4),
+    "sbss": (0x4E2680, 0x4E3000, 1),
+    "bss": (0x4E3000, 0x1ECE340, 1),
+}
+LIT4 = 0x4E0680    # .lit4: linker-pooled float literals, 0x4E0680-0x4E1400 (padded to 0x80)
+COMMON = 0x1ECE340  # COMMON symbols of the ee-gcc libraries, to the end of .bss
+NOLOAD = ("sbss", "bss")
+CARVED = ("d2/", "d3/")  # units carved out of the game units for C (C_UNITS in configure.py)
 SUBSEG = re.compile(r"\s*- \[0x([0-9A-F]+), (\w+), (\S+)\]")
 
 
@@ -41,11 +57,11 @@ def text_units() -> list[tuple[int, str]]:
 
 
 def fixed_slices() -> dict[str, list[tuple[int, int, str]]]:
-    """Data slices of C units (d2/) already carved in b3.yaml: stream -> [(start, end, name)]."""
+    """Data slices of C units already carved in b3.yaml: stream -> [(start, end, name)]."""
     lines = [m for m in map(SUBSEG.match, YAML.read_text().splitlines()) if m]
     out = {s: [] for s in STREAMS}
     for k, m in enumerate(lines):
-        if m.group(2) in STREAMS and m.group(3).startswith("d2/"):
+        if m.group(2) in STREAMS and m.group(3).startswith(CARVED):
             start = int(m.group(1), 16) + xref.BASE
             end = int(lines[k + 1].group(1), 16) + xref.BASE
             out[m.group(2)].append((start, end, m.group(3)))
@@ -99,16 +115,25 @@ def assign(items: list[int], users: dict[int, set[int]], nunits: int) -> list[in
     return out
 
 
-def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, str]]:
-    lo, hi = STREAMS[stream]
+def unit_index(units: list[tuple[int, str]]):
+    """Function address -> rank among the units that own data. C units (d2/, d3/) own only their carved slices, so
+    their references count for the unit before them."""
     starts = [a for a, _ in units]
-    # C units (d2/) own only their carved slices, so their references count for the unit before them
-    owners = [k for k, (_, name) in enumerate(units) if not name.startswith("d2/")]
+    owners = [k for k, (_, name) in enumerate(units) if not name.startswith(CARVED)]
     rank = {u: i for i, u in enumerate(owners)}
-    unit_of = lambda addr: rank[max(u for u in owners if u <= bisect.bisect_right(starts, addr) - 1)]
+    return owners, lambda addr: rank[max(u for u in owners if u <= bisect.bisect_right(starts, addr) - 1)]
+
+
+def references(stream: str, units, funcs) -> tuple[list[int], dict[int, set[int]], list[int]]:
+    """Items of a stream, the units (ranks) referencing each item, and the owner rank list."""
+    lo, hi, _ = STREAMS[stream]
+    owners, unit_of = unit_index(units)
+    starts = [a for a, _ in units]
     users: dict[int, set[int]] = {}
     for f in funcs:
-        if f.addr < 0x469E00:  # code in .text only; .init code can't be placed in a unit
+        # code in .text only (.init code can't be placed in a unit), and not crt0, whose references are section
+        # bounds (it clears .sbss/.bss from their start), not variables of its own
+        if f.addr < 0x469E00 and units[bisect.bisect_right(starts, f.addr) - 1][1] != "runtime/crt0":
             for a in f.refs:
                 if lo <= a < hi:
                     users.setdefault(a, set()).add(unit_of(f.addr))
@@ -118,34 +143,47 @@ def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, 
         if a not in items:
             k = bisect.bisect_right(items, a) - 1
             users.setdefault(items[k], set()).update(users.pop(a))
+    return items, users, owners
+
+
+def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, str]]:
+    lo, hi, align = STREAMS[stream]
+    items, users, owners = references(stream, units, funcs)
     owner = [owners[u] for u in assign(items, users, len(owners))]
     referenced = [i for i, a in enumerate(items) if a in users]
-    # cut points: where the owner of referenced items changes, moved back over unreferenced items to the first
-    # 8-byte-aligned one after the previous unit's last referenced item
+    # cut points: where the owner of referenced items changes, moved back over unreferenced items to a library's
+    # version tag if there is one, else to the first 8-byte-aligned one after the previous unit's last referenced
+    # item
+    tags = version_tags()
     cuts = {items[0]: owner[referenced[0]] if referenced else 0}
     for p, q in zip(referenced, referenced[1:]):
         if owner[p] != owner[q]:
             cut = items[q]
-            for i in range(p + 1, q):
-                if items[i] % 8 == 0:
-                    cut = items[i]
-                    break
+            between = items[p + 1:q]
+            for a in [a for a in between if a in tags] or [a for a in between if a % 8 == 0][:1]:
+                cut = a
+                break
             cuts[cut] = owner[q]
-    # The generated assembly aligns items with .align directives relative to its own start, and some items need
-    # 16-byte alignment, so every slice must start on a 16-byte boundary: snap each cut to the nearest 16-aligned
-    # item start between its neighbours, or drop it if there is none.
-    aligned = [a for a in items if a % 16 == 0]
+    # Snap each cut to the nearest item start before or after it that has the stream's alignment (the generated
+    # assembly aligns items relative to the start of its own file) and lies between its neighbours, or drop it if
+    # there is none. Of the two, the one that moves fewer referenced items across the cut wins, then the nearer.
+    aligned = [a for a in items if a % align == 0]
+    owner_at = {a: owner[i] for i, a in enumerate(items) if a in users}
     ordered = sorted(cuts)
     snapped = {}
     for k, c in enumerate(ordered):
-        if c % 16 == 0 or k == 0:
+        if c % align == 0 or k == 0:
             snapped[c] = cuts[c]
             continue
         lo_c = max(snapped) if snapped else items[0]
         hi_c = ordered[k + 1] if k + 1 < len(ordered) else hi
         cands = [a for a in aligned if lo_c < a < hi_c]
+        cands = [x for x in (max((a for a in cands if a < c), default=None), min((a for a in cands if a > c),
+                                                                                default=None)) if x is not None]
+        moved = lambda a: sum(1 for x, u in owner_at.items()
+                              if (a <= x < c and u != cuts[c]) or (c <= x < a and u == cuts[c]))
         if cands:
-            snapped[min(cands, key=lambda a: (abs(a - c), a))] = cuts[c]
+            snapped[min(cands, key=lambda a: (moved(a), abs(a - c), a))] = cuts[c]
     cuts = snapped
     for start, end, name in fixed_slices()[stream]:
         prev = max((c for c in cuts if c < start), default=items[0])
@@ -163,23 +201,51 @@ def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, 
     return out
 
 
+def own_share(stream: str, sl: list[tuple[int, str]], units, funcs) -> tuple[int, int]:
+    """(references landing in their own unit's slice, all references) for a stream's slices."""
+    lo, hi, _ = STREAMS[stream]
+    starts = [a for a, _ in units]
+    unit_name = lambda addr: units[bisect.bisect_right(starts, addr) - 1][1]
+    cut = [a for a, _ in sl]
+    own = total = 0
+    for f in funcs:
+        if f.addr >= 0x469E00 or unit_name(f.addr).startswith(CARVED):
+            continue
+        for a in f.refs:
+            if lo <= a < hi:
+                total += 1
+                own += sl[bisect.bisect_right(cut, a) - 1][1] == unit_name(f.addr)
+    return own, total
+
+
+def yaml_line(stream: str, start: int, name: str) -> str:
+    if stream in NOLOAD:
+        return f"      - {{ type: {stream}, vram: 0x{start:08X}, name: {name} }}"
+    return f"      - [0x{start - xref.BASE:06X}, {stream}, {name}]"
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--yaml", action="store_true", help="print the .data/.rodata subsegment lines for b3.yaml")
+    p.add_argument("--yaml", action="store_true", help="print the data subsegment lines for b3.yaml")
     args = p.parse_args()
     funcs = xref.load()
     units = text_units()
     result = {s: slices(s, units, funcs) for s in STREAMS}
     if args.yaml:
         for stream, sl in result.items():
+            if stream == "sdata":
+                print(yaml_line("sdata", LIT4, "lit4"))
             for start, name in sl:
-                print(f"      - [0x{start - xref.BASE:06X}, {stream}, {name}]")
+                print(yaml_line(stream, start, name))
+        print(yaml_line("bss", COMMON, "common"))
         return
     for stream, sl in result.items():
         names = [n for _, n in sl]
         dup = len(names) - len(set(names))
+        own, total = own_share(stream, sl, units, funcs)
         print(f".{stream}: {len(sl)} slices for {len(set(names))} units"
-              + (f" ({dup} units have more than one slice)" if dup else ""))
+              + (f" ({dup} units have more than one slice)" if dup else "")
+              + f"; {own} of {total} code references ({100 * own / max(total, 1):.1f}%) land in their own unit")
 
 
 if __name__ == "__main__":

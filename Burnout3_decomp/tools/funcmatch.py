@@ -6,8 +6,9 @@ Run inside the build container after configure.py has generated assembly/asm/:
     tools/dock python3 tools/funcmatch.py func_0013C930 c_cpp/src/d2/foo.c -f=-O3 -f="-O4 -inline auto"
 
 The function's assembly is pulled out of assembly/asm/ into its own object (the target), the source is
-compiled with CodeWarrior once per flag set (the base), and objdiff reports how well they match. On a
-mismatch the two disassemblies are printed side by side. Nothing outside build/funcmatch/ is touched.
+compiled with CodeWarrior once per flag set (the base), and objdiff reports how well they match. Float literals in
+the base are pointed at the original's pooled .lit4 entries first (tools/litfix.py). On a mismatch the two
+disassemblies are printed side by side. Nothing outside build/funcmatch/ is touched.
 """
 
 import argparse
@@ -20,7 +21,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
 from configure import AS_FLAGS, ASM_DIR, CFLAGS, CROSS, MWCC  # noqa: E402
+import litfix  # noqa: E402
 
 WORK = Path("build/funcmatch")
 ASM_HEADER = '.include "macro.inc"\n\n.set noat\n.set noreorder\n\n.section .text, "ax"\n\n'
@@ -30,31 +33,33 @@ def sh(cmd: str, **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, shell=True, cwd=ROOT, capture_output=True, text=True, **kw)
 
 
-def extract_function(name: str) -> str:
+def extract_function(name: str) -> tuple[Path, str]:
+    """The unit's assembly file that defines the function, and the function's assembly."""
     for path in sorted((ROOT / ASM_DIR).rglob("*.s")):
         text = path.read_text()
         m = re.search(rf"^glabel {re.escape(name)}\n.*?^endlabel {re.escape(name)}\n", text, re.S | re.M)
         if m:
-            return m.group(0)
+            return path, m.group(0)
     sys.exit(f"{name}: not found in {ASM_DIR}; run configure.py first")
 
 
 def build_target(name: str) -> Path:
     s = WORK / f"{name}.target.s"
     o = WORK / f"{name}.target.o"
-    (ROOT / s).write_text(ASM_HEADER + extract_function(name))
+    (ROOT / s).write_text(ASM_HEADER + extract_function(name)[1])
     r = sh(f"{CROSS}as {AS_FLAGS} -o {o} {s}")
     if r.returncode:
         sys.exit(f"assembling {s} failed:\n{r.stderr}")
     return o
 
 
-def compile_base(compiler: Path, src: Path, flags: str, tag: int) -> tuple[Path | None, str]:
+def compile_base(compiler: Path, src: Path, flags: str, tag: int, asm: Path) -> tuple[Path | None, str]:
     o = WORK / f"{src.stem}.{tag}.o"
     env = dict(os.environ, MWCIncludes="c_cpp/include")
     r = sh(f"wibo {compiler} {flags} -c {src} -o {o}", env=env)
     if r.returncode or not (ROOT / o).exists():
         return None, r.stdout + r.stderr
+    litfix.fix(ROOT / o, asm)
     return o, ""
 
 
@@ -96,9 +101,10 @@ def main() -> None:
         compiler = compiler / "mwccps2.exe"
     (ROOT / WORK).mkdir(parents=True, exist_ok=True)
     target = build_target(args.function)
+    asm = extract_function(args.function)[0]
     best = 0.0
     for i, flags in enumerate(args.flags or [CFLAGS]):
-        base, err = compile_base(compiler, args.source, flags, i)
+        base, err = compile_base(compiler, args.source, flags, i, asm)
         if base is None:
             print(f"{flags:16} compile failed\n{err}")
             continue

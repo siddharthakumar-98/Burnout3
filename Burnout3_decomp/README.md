@@ -6,12 +6,13 @@ The goal is C/C++ source that the original compiler (Metrowerks CodeWarrior for 
 builds into a byte-identical `SLUS_210.50`. The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech's device libraries. Game assets are
 never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing them.
 
-> **Status:** D2 done, D3 in progress. The compiler is identified (CodeWarrior 3.0.3,
-> `-O4 -str readonly -Cpp_exceptions off`), and 10 functions in 8 C/C++ files compile to the original bytes and are
-> linked in place of their assembly. The binary is mapped into game, RenderWare, libsce, runtime, DirtySock and
-> Logitech ranges, with progress per category in [PROGRESS.md](PROGRESS.md). The full build still reproduces the
-> original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for milestones and
-> [docs/layout.md](docs/layout.md) for the memory layout.
+> **Status:** D3 done, D4 next. The compiler is identified (CodeWarrior 3.0.3,
+> `-O4 -str readonly -Cpp_exceptions off`), and 12 functions in 10 C/C++ files compile to the original bytes and are
+> linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
+> game code is split into 358 provisional translation units, and each unit has its own slices of `.data`, `.rodata`,
+> `.sdata`, `.sbss` and `.bss`. Progress is reported per category in [PROGRESS.md](PROGRESS.md). The full build still
+> reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
+> milestones and [docs/layout.md](docs/layout.md) for the memory layout.
 
 ## Supported build
 
@@ -93,6 +94,9 @@ The decomp has two sides plus shared files at the top level.
 | `config/linker_extra.ld` | Extra linker script, including the offsets used by `reloc_addrs.txt` | yes |
 | `tools/elf.py` | Extracts the load segment and rebuilds the exact ELF container | yes |
 | `tools/funcmatch.py` | Compares one C/C++ function with the original under chosen flags or compiler | yes |
+| `tools/litfix.py` | Points a compiled object's float literals at the original's pooled `.lit4` entries (run by the build) | yes |
+| `tools/xref.py`, `tools/tusplit.py`, `tools/dataslice.py` | Map the binary: cross-references, translation-unit boundaries, per-unit data slices | yes |
+| `tools/progress.py` | Writes `PROGRESS.md` from objdiff's report | yes |
 | `tools/dock` | Runs a command in the build container | yes |
 | `docker/Dockerfile` | Build image: binutils-mips-linux-gnu, wibo, objdiff-cli, splat | yes |
 | `docs/` | Memory layout, compiler identification, reverse-engineering notes | yes |
