@@ -177,7 +177,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | SHA-1 match | `tools/dock ninja` prints `build/SLUS_210.50: 332be40d… OK` and fails otherwise | **passing** |
 | Clean rebuild | Delete `asm/ assets/ build/ build.ninja orig/SLUS_210.50.rom`, then `tools/dock python3 configure.py && tools/dock ninja` | **passing** |
 | Byte comparison | `cmp build/SLUS_210.50 orig/SLUS_210.50` reports no differences | **passing** |
-| Fresh-clone build | Follow [Burnout3_decomp/README.md](Burnout3_decomp/README.md) from a fresh clone with only the ISO present | to do |
+| Fresh-clone build | Follow [Burnout3_decomp/README.md](Burnout3_decomp/README.md) from a fresh clone with only the ISO present | **passing** (2026-10-06: a fresh clone with only the ELF and compiler added builds byte-identical and regenerates identical progress files; the ELF was copied in, not re-extracted from the ISO) |
 | Nothing derived is tracked | `git status --ignored` shows `orig/`, `asm/`, `assets/`, `build/`, `compilers/` ignored, and `git ls-files` lists no binaries | **passing** |
 
 ### 2. The build is genuinely relinkable
