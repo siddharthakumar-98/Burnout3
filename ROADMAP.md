@@ -110,8 +110,8 @@ tools/litfix.py           points a C object's float literals at the original's p
 tools/xref.py             cross-references, compiler fingerprints and strings, for mapping the binary
 tools/tusplit.py          proposes game translation-unit boundaries and writes the .text block of b3.yaml
 tools/dataslice.py        cuts .data/.rodata/.sdata/.sbss/.bss into per-unit slices and writes that block of b3.yaml
-tools/progress.py         writes PROGRESS.md (per-category progress) from objdiff's report
-PROGRESS.md               generated progress table
+tools/progress.py         writes PROGRESS.md, progress_map.svg and progress.json from objdiff's report
+PROGRESS.md               generated progress table (progress_map.svg: the README's map; progress.json: its badge)
 config/                   symbol names, relocation overrides, extra linker script (shared by both sides)
 tools/elf.py              hash-checked extraction and exact ELF container rebuild
 tools/dock                runs a command in the build container
@@ -190,7 +190,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | Check | How | State |
 |---|---|---|
 | Per function | objdiff shows 100% for every function moved from assembly to C | **passing** (12 of 12 linked functions) |
-| Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category | **passing** |
+| Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category, plus the README's progress map and badge | **passing** |
 | No regressions | The SHA-1 check stays green after every function lands. A function that doesn't match stays in assembly. | **passing** (SHA-1 matches with all 12 linked from C, including a C-compiled jump table in `.rodata` and two pooled float literals) |
 
 ### 4. It runs like the original
