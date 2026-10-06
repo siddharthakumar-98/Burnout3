@@ -1,23 +1,32 @@
 #!/usr/bin/env python3
-"""Write PROGRESS.md from objdiff's report.
+"""Write PROGRESS.md, progress_map.svg and progress.json from objdiff's report.
 
 Run inside the build container after a successful build:
 
     tools/dock python3 tools/progress.py
+    python3 tools/progress.py --no-report      redraw from the existing build/report.json (no container needed)
 
 objdiff-cli compares every unit in objdiff.json (written by configure.py) and reports, per progress category,
 how much code is matched: compiled from C/C++ into exactly the original bytes. Assembly-only units count toward
-the totals but never as matched.
+the totals but never as matched. progress_map.svg is the map shown in the top-level README (tools/progress_map.py),
+and progress.json feeds its shields.io badge. All three are committed; CI can't regenerate them, because building
+needs your own ELF and compiler.
 """
 
+import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+import progress_map  # noqa: E402
+
 REPORT = Path("build/report.json")
 OUT = Path("PROGRESS.md")
+MAP = Path("progress_map.svg")
+BADGE = Path("progress.json")
 
 
 def pct(part: int, whole: int) -> str:
@@ -31,10 +40,14 @@ def row(name: str, m: dict) -> str:
 
 
 def main() -> None:
-    r = subprocess.run(["objdiff-cli", "report", "generate", "-p", ".", "-o", str(REPORT)], cwd=ROOT,
-                       capture_output=True, text=True)
-    if r.returncode:
-        sys.exit(f"objdiff-cli failed:\n{r.stderr}")
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--no-report", action="store_true", help=f"reuse {REPORT} instead of running objdiff-cli")
+    args = p.parse_args()
+    if not args.no_report:
+        r = subprocess.run(["objdiff-cli", "report", "generate", "-p", ".", "-o", str(REPORT)], cwd=ROOT,
+                           capture_output=True, text=True)
+        if r.returncode:
+            sys.exit(f"objdiff-cli failed:\n{r.stderr}")
     report = json.loads((ROOT / REPORT).read_text())
     config = json.loads((ROOT / "objdiff.json").read_text())
     names = {c["id"]: c["name"] for c in config["progress_categories"]}
@@ -58,7 +71,10 @@ def main() -> None:
         "",
     ]
     (ROOT / OUT).write_text("\n".join(lines))
+    (ROOT / MAP).write_text(progress_map.render(report))
+    (ROOT / BADGE).write_text(json.dumps(progress_map.badge(report), indent=2) + "\n")
     print("\n".join(lines))
+    print(f"wrote {OUT}, {MAP} and {BADGE}")
 
 
 if __name__ == "__main__":

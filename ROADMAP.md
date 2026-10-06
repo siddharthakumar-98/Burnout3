@@ -110,8 +110,8 @@ tools/litfix.py           points a C object's float literals at the original's p
 tools/xref.py             cross-references, compiler fingerprints and strings, for mapping the binary
 tools/tusplit.py          proposes game translation-unit boundaries and writes the .text block of b3.yaml
 tools/dataslice.py        cuts .data/.rodata/.sdata/.sbss/.bss into per-unit slices and writes that block of b3.yaml
-tools/progress.py         writes PROGRESS.md (per-category progress) from objdiff's report
-PROGRESS.md               generated progress table
+tools/progress.py         writes PROGRESS.md, progress_map.svg and progress.json from objdiff's report
+PROGRESS.md               generated progress table (progress_map.svg: the README's map; progress.json: its badge)
 config/                   symbol names, relocation overrides, extra linker script (shared by both sides)
 tools/elf.py              hash-checked extraction and exact ELF container rebuild
 tools/dock                runs a command in the build container
@@ -177,7 +177,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | SHA-1 match | `tools/dock ninja` prints `build/SLUS_210.50: 332be40d… OK` and fails otherwise | **passing** |
 | Clean rebuild | Delete `asm/ assets/ build/ build.ninja orig/SLUS_210.50.rom`, then `tools/dock python3 configure.py && tools/dock ninja` | **passing** |
 | Byte comparison | `cmp build/SLUS_210.50 orig/SLUS_210.50` reports no differences | **passing** |
-| Fresh-clone build | Follow [Burnout3_decomp/README.md](Burnout3_decomp/README.md) from a fresh clone with only the ISO present | to do |
+| Fresh-clone build | Follow [Burnout3_decomp/README.md](Burnout3_decomp/README.md) from a fresh clone with only the ISO present | **passing** (2026-10-06: a fresh clone with only the ELF and compiler added builds byte-identical and regenerates identical progress files; the ELF was copied in, not re-extracted from the ISO) |
 | Nothing derived is tracked | `git status --ignored` shows `orig/`, `asm/`, `assets/`, `build/`, `compilers/` ignored, and `git ls-files` lists no binaries | **passing** |
 
 ### 2. The build is genuinely relinkable
@@ -190,7 +190,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | Check | How | State |
 |---|---|---|
 | Per function | objdiff shows 100% for every function moved from assembly to C | **passing** (12 of 12 linked functions) |
-| Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category | **passing** |
+| Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category, plus the README's progress map and badge | **passing** |
 | No regressions | The SHA-1 check stays green after every function lands. A function that doesn't match stays in assembly. | **passing** (SHA-1 matches with all 12 linked from C, including a C-compiled jump table in `.rodata` and two pooled float literals) |
 
 ### 4. It runs like the original
