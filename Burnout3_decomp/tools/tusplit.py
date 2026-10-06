@@ -23,6 +23,8 @@ The binary has no symbols or file names, so boundaries are inferred (docs/layout
   anchors  Each of the 158 C++ static initializers (__sinit_*, one per file, in link order) is located through
            the private items it shares with game functions. Two consecutive anchors are different files, so if
            no cut separates them one is forced at the weakest gap between them.
+  by hand  FORCED_CUTS and MERGES record boundaries settled from evidence the model doesn't weigh; they override
+           everything above.
 
 The result is a first pass: units may still hold more than one real file, or one file split in two.
 """
@@ -46,7 +48,12 @@ GAME = [(0x12EB30, 0x1D8260), (0x211C30, 0x215660), (0x216E40, 0x2372F0), (0x23A
 # Libraries CodeWarrior compiled inside the game ranges, found as call-closed regions: nothing inside calls game
 # code outside, while game code calls in (docs/layout.md). (start, end, unit prefix)
 EMBEDDED_LIBS = [(0x290B10, 0x2B52C0, "rwa")]  # RenderWare Audio, EE side
-CARVED = ("d2/", "d3/")  # units carved out of the game units for C (C_UNITS in configure.py)
+CARVED = ("d2/", "d3/", "d4/")  # units carved out of the game units for C (C_UNITS in configure.py)
+# Boundaries settled by hand from evidence the model doesn't weigh (callers, what the code does). A forced cut is
+# always a boundary, like an initializer anchor, and is never merged away; a merge removes a boundary the model
+# would make. Function start -> reason.
+FORCED_CUTS: dict[int, str] = {}
+MERGES: dict[int, str] = {}
 RODATA, DATA, SDATA = (0x4B1500, 0x4D3E00), (0x483F00, 0x4B1500), (0x4E1400, 0x4E2680)  # .sdata without .lit4
 VTABLES, CTOR, INIT = (0x4DDAA0, 0x4E0680), (0x4DD820, 0x4DDAA0), (0x4D3E00, 0x4DD820)
 SBSS, BSS = (0x4E2680, 0x4E3000), (0x4E3000, 0x1ECE340)  # .bss without the COMMON block at its end
@@ -228,9 +235,18 @@ class Model:
             forced_cuts.add(g + 1)
             ordered = sorted(starts)
             forced += 1
-        protected = edges | forced_cuts
+        hand = set()
+        for a in FORCED_CUTS | MERGES:
+            if a not in self.idx:
+                sys.exit(f"tusplit: 0x{a:08X} in FORCED_CUTS/MERGES is not the start of a game function")
+        for a in FORCED_CUTS:
+            starts.add(self.idx[a])
+            hand.add(self.idx[a])
+        protected = edges | forced_cuts | hand
         merged = self._merge(sorted(starts), protected, anchors)
-        stats = {"zero_gaps": len(cuts), "anchors": len(anchors), "forced": forced, "merged": merged}
+        self._starts -= {self.idx[a] for a in MERGES}
+        stats = {"zero_gaps": len(cuts), "anchors": len(anchors), "forced": forced, "merged": merged,
+                 "hand": len(FORCED_CUTS) + len(MERGES)}
         return sorted(self._starts), stats
 
     def _merge(self, starts: list[int], protected: set[int], anchors) -> int:
@@ -287,7 +303,7 @@ def main() -> None:
     sizes = [b - a for a, b in zip(starts, starts[1:] + [len(m.G)])]
     if args.yaml:
         # The .text block of the current b3.yaml: library lines are kept, game lines are replaced, and C units
-        # (d2/, d3/) stay as carved (each ends where the next .text subsegment starts).
+        # (d2/, d3/, d4/) stay as carved (each ends where the next .text subsegment starts).
         text = []
         for line in (ROOT / "assembly/splat/b3.yaml").read_text().splitlines():
             mm = re.match(r"\s*- \[0x([0-9A-F]+), asm, (\S+)\]", line)
@@ -302,7 +318,7 @@ def main() -> None:
     print(f"{len(m.G)} game functions -> {len(starts)} units "
           f"(gaps no link crosses: {stats['zero_gaps']}; initializer anchors: {stats['anchors']}, "
           f"cuts forced between anchors: {stats['forced']}; boundaries removed by contradicting evidence: "
-          f"{stats['merged']})")
+          f"{stats['merged']}; set by hand: {stats['hand']})")
     print(f"functions per unit: median {sorted(sizes)[len(sizes) // 2]}, max {max(sizes)}, "
           f"single-function units {sum(1 for s in sizes if s == 1)}")
 

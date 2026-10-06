@@ -115,7 +115,8 @@ is split across units (0 of 88), no `.sdata` float constant is (0 of 25), and no
 
 **Provisional:** a unit may still hold several real files, or one file may be cut in two. Units will be merged or
 split as decompiling uncovers static data and string order. Two units contain two initializer anchors and so must
-hold at least two files each: `game/unit_0041D3E0` and `game/unit_0042C2A0`.
+hold at least two files each: `game/unit_0041D3E0` and `game/unit_0042C2A0`. Boundaries settled by hand go into
+`FORCED_CUTS` and `MERGES` in `tools/tusplit.py`, each with its reason, so regenerating keeps them.
 
 Before the `.lit4` pool was understood (the first D3 pass), shared float literals counted as same-file evidence
 and the split had 377 units. Dropping that evidence and adding the small-data sections gives the 358 above.
@@ -142,6 +143,9 @@ that block of `b3.yaml` (`python3 tools/dataslice.py --yaml`):
 - crt0's references don't count: it clears `.sbss`/`.bss` from their start address, which is not a variable of its
   own.
 - C units' carved slices (the D2 jump table) are kept exactly so the C unit can replace them.
+- Slice starts the references mislead are set by hand in `FORCED_CUTS`, each with its reason. The one so far is
+  libc's `.data` at `0x4873F0`: newlib's `impure_data` (`struct _reent`) and its stdin/stdout/stderr `FILE`s follow,
+  and no code references them directly, so snapping would hand them to libcdvd.
 
 | Section | Slices | Code references landing in their own unit's slice |
 |---|---|---|
