@@ -96,6 +96,7 @@ The decomp has two sides plus shared files at the top level.
 | `tools/funcmatch.py` | Compares one C/C++ function with the original under chosen flags or compiler | yes |
 | `tools/litfix.py` | Points a compiled object's float literals at the original's pooled `.lit4` entries (run by the build) | yes |
 | `tools/xref.py`, `tools/tusplit.py`, `tools/dataslice.py` | Map the binary: cross-references, translation-unit boundaries, per-unit data slices | yes |
+| `tools/ghidra_sync.py` | Keeps the Ghidra project (via ghidra-mcp) in step with the repo's functions, names and units | yes |
 | `tools/progress.py`, `tools/progress_map.py` | Write `PROGRESS.md`, the progress map `progress_map.svg` and its badge data `progress.json` from objdiff's report | yes |
 | `tools/dock` | Runs a command in the build container | yes |
 | `docker/Dockerfile` | Build image: binutils-mips-linux-gnu, wibo, objdiff-cli, splat | yes |

@@ -8,6 +8,7 @@ Run after configure.py has generated assembly/asm/ (no container needed, plain P
     python3 tools/xref.py refs 0x4B8145               functions that reference an address range (+/- 0x100)
     python3 tools/xref.py strings 0x4B1500 0x4B2200   printable strings in the original image
     python3 tools/xref.py compilers                   CodeWarrior vs GCC regions of .text
+    python3 tools/xref.py names                       library functions named by their own messages
 
 Data references are split by section as recovered in docs/layout.md, so translation-unit order can be read off
 the .data and .rodata streams: every unit's pieces of each section are laid out in link order.
@@ -217,6 +218,43 @@ def cmd_strings(lo, hi, minlen):
         print(f"{lo + m.start():06X} {m.group(0)[:100].decode('ascii', 'replace')!r}")
 
 
+# Words that start library messages without naming a function: module tags and message levels
+NOT_NAMES = {"Warning", "ProtoMangle", "DirtyElf"}
+
+
+def cmd_names(funcs, units):
+    """Library functions whose messages start with their own name ("sceDbcSendData: rpc error" in
+    sceDbcSendData). A function is named only when exactly one such name appears in it and no other function
+    claims the same name; names without both cases (module tags such as "netconn", levels such as "ERROR")
+    and NOT_NAMES are ignored. Prints symbol_addrs.txt lines for review."""
+    rom = ROM.read_bytes()
+    starts = [a for a, _ in units]
+    ident = re.compile(r"\s*\[?([_A-Za-z][A-Za-z0-9_]{3,})\]?\s*(?::|\()")
+    found = {}
+    for f in funcs:
+        if f.addr >= 0x469E00:
+            continue
+        unit = units[bisect_right(starts, f.addr) - 1][1]
+        if unit.startswith(("game/", "rwa/", "d2/", "d3/")):
+            continue
+        names = set()
+        for a in f.refs:
+            if section_of(a) not in ("data", "rodata"):
+                continue
+            text = rom[a - BASE:a - BASE + 120].split(b"\0")[0].decode("ascii", "replace")
+            m = ident.match(text)
+            if m and m.group(1) not in NOT_NAMES and re.search("[a-z]", m.group(1)) and re.search("[A-Z]", m.group(1)):
+                names.add(m.group(1))
+        if len(names) == 1:
+            found[f.addr] = (names.pop(), unit, f.name)
+    claimed = {}
+    for a, (n, _, _) in found.items():
+        claimed.setdefault(n, []).append(a)
+    for a, (n, unit, old) in sorted(found.items()):
+        if len(claimed[n]) == 1 and old.startswith("func_"):
+            print(f"{n} = 0x{a:08X}; // type:func  ({unit})")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -231,6 +269,7 @@ def main():
     s.add_argument("lo", type=num, nargs="?", default=0x100000)
     s.add_argument("hi", type=num, nargs="?", default=0x469E00)
     s.add_argument("--min", type=num, default=0, help="hide CodeWarrior runs smaller than this")
+    sub.add_parser("names", help="library functions named by their own messages")
     s = sub.add_parser("bins")
     s.add_argument("lo", type=num)
     s.add_argument("hi", type=num)
@@ -239,6 +278,10 @@ def main():
     if a.cmd == "strings":
         return cmd_strings(a.lo, a.hi or a.lo + 0x1000, a.min)
     funcs = load()
+    if a.cmd == "names":
+        sys.path.insert(0, str(ROOT / "tools"))
+        import dataslice
+        return cmd_names(funcs, dataslice.text_units())
     if a.cmd == "funcs":
         cmd_funcs(funcs, a.lo, a.hi or a.lo + 0x1000)
     elif a.cmd == "compilers":
