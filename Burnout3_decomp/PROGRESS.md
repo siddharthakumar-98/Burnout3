@@ -6,9 +6,9 @@ when its C/C++ compiles to exactly the original bytes; the build links it once i
 
 | Category | Functions | | Code bytes | | Named |
 |---|---|---|---|---|---|
-| Burnout 3 game code | 12 / 5,655 | 0.21% | 420 / 2,674,812 | 0.02% | 1 |
+| Burnout 3 game code | 12 / 5,654 | 0.21% | 420 / 2,674,804 | 0.02% | 1 |
 | RenderWare 3.6 | 0 / 679 | 0.00% | 0 / 234,612 | 0.00% | 0 |
-| RenderWare Audio (EE side) | 0 / 701 | 0.00% | 0 / 145,524 | 0.00% | 0 |
+| RenderWare Audio (EE side) | 0 / 702 | 0.00% | 0 / 145,532 | 0.00% | 0 |
 | Sony libsce | 0 / 936 | 0.00% | 0 / 155,784 | 0.00% | 154 |
 | Runtime: crt0, Metrowerks C++ runtime, newlib libc/libm, libgcc | 0 / 258 | 0.00% | 0 / 98,844 | 0.00% | 54 |
 | EA DirtySock | 0 / 554 | 0.00% | 0 / 116,316 | 0.00% | 10 |

@@ -47,13 +47,46 @@ GAME = [(0x12EB30, 0x1D8260), (0x211C30, 0x215660), (0x216E40, 0x2372F0), (0x23A
         (0x41C900, 0x443860), (0x445300, 0x469E00)]
 # Libraries CodeWarrior compiled inside the game ranges, found as call-closed regions: nothing inside calls game
 # code outside, while game code calls in (docs/layout.md). (start, end, unit prefix)
-EMBEDDED_LIBS = [(0x290B10, 0x2B52C0, "rwa")]  # RenderWare Audio, EE side
+EMBEDDED_LIBS = [(0x290B10, 0x2B52D0, "rwa")]  # RenderWare Audio, EE side
 CARVED = ("d2/", "d3/", "d4/")  # units carved out of the game units for C (C_UNITS in configure.py)
 # Boundaries settled by hand from evidence the model doesn't weigh (callers, what the code does). A forced cut is
 # always a boundary, like an initializer anchor, and is never merged away; a merge removes a boundary the model
 # would make. Function start -> reason.
-FORCED_CUTS: dict[int, str] = {}
-MERGES: dict[int, str] = {}
+FORCED_CUTS: dict[int, str] = {
+    0x12EEF0: "input wrappers after main: 0x12EEF0 and the constructor 0x12FFB0 store the frame counter 0x4F50A0 in "
+              "the same field (+0x128); main calls none of them and shares no data with them",
+    0x130030: "debug drawing: 0x130B80 installs 0x130030 as a callback, the first __sinit builds 0x130750's line "
+              "buffer with 0x130BF0 and a const vector at .rodata 0x4B42C0, after main's strings",
+    0x130C20: "the class whose vtable at 0x4DDAC0 lists 0x130C40 and 0x131100-0x131990 (movie names, Data/*.bin "
+              "loading); 0x130C20/0x130C30 set fields of the same object",
+    0x1D2EE0: "IOP 'dvd:' device for the file system (vtables 0x4DDFA0/0x4DDFC0; init 0x1D3850 registers it through "
+              "0x2129A0 and installs the DMA handlers 0x1D2EE0/0x1D2F50); only an extern global (0x4E2730) links it on",
+    0x1D3A50: "boot/system code: 0x1D3A60-0x1D3D30 on .sbss 0x4E273C-0x4E2744, the ELF launcher 0x1D3D70 (language=%d) "
+              "sharing 'dev9x:' with 0x1D4020, and the IOP module loader 0x1D41E0",
+    0x217610: "base-class methods (virtual forwarding through +0x4, interface lookup 0x217690) shared by the vtables "
+              "0x4DE2B0, 0x4DE380, 0x4DFF20, 0x4DFFE0 of unrelated classes; not the pad code before it",
+    0x222300: "memory manager: 0x222300-0x222650 are exactly the methods in vtable 0x4DE030, which __sinit #18 "
+              "installs in the global heap object 0x1D6D880; the RenderWare hooks before it belong to the class at "
+              "0x221420",
+    0x222C90: "end of the memory manager's methods; 0x222C90 reads .sbss 0x4E2948, which follows 0x2270B0's 0x4E2944, "
+              "so it opens the next file (__sinit #19, 0x223130-0x2298B0)",
+    0x22B850: "controller layer: 0x22B850-0x22D2E0 all fill per-pad pointers of one object (+0xD48, stride 300) "
+              "through the helper 0x22C610 and call the input wrappers in unit_0012EEF0",
+    0x2B6C40: "fixed-size pool (free list); called only from the pool users unit_001D4680 and unit_00383C10, while the "
+              "code before it is driven from unit_0015F270",
+    0x2B6FF0: "request accessors (get/post/cancel for request types 0xD and 0xE through 0x1A84A0/0x1A8540), called "
+              "from unit_0023B000; unrelated to the pool before them",
+}
+MERGES: dict[int, str] = {
+    0x216FF0: "pad class (vtable 0x4DDFF0 = 0x214CD0, 0x217070, 0x217060, 0x217010, 0x216FF0) with its stick and "
+              "pressure helpers 0x216E40-0x216F80 and accessors on the same fields (+0x8, +0xDC, +0xE4, +0xE8)",
+    0x217010: "pad class, as 0x216FF0",
+    0x217060: "pad class, as 0x216FF0",
+    0x217070: "pad class, as 0x216FF0 (vibration through libdbc's sceDbcSendData2)",
+    0x22BEE0: "same controller object and helper 0x22C610 as 0x22B850-0x22BEE0",
+    0x2B52C0: "RenderWare Audio callback that clears .sbss 0x4E2CF4; 0x2B51F0 just before takes its address and uses "
+              "the same variable, so it is a static function of that file",
+}
 RODATA, DATA, SDATA = (0x4B1500, 0x4D3E00), (0x483F00, 0x4B1500), (0x4E1400, 0x4E2680)  # .sdata without .lit4
 VTABLES, CTOR, INIT = (0x4DDAA0, 0x4E0680), (0x4DD820, 0x4DDAA0), (0x4D3E00, 0x4DD820)
 SBSS, BSS = (0x4E2680, 0x4E3000), (0x4E3000, 0x1ECE340)  # .bss without the COMMON block at its end
@@ -221,6 +254,13 @@ class Model:
         for a, b in zip(allcuts, allcuts[1:] + [len(G)]):
             if a in starts or any(self.evidence[i] for i in range(a, b)):
                 starts.add(a)
+        # boundaries set by hand count before the anchors, which then force only the cuts still missing
+        for a in FORCED_CUTS | MERGES:
+            if a not in self.idx:
+                sys.exit(f"tusplit: 0x{a:08X} in FORCED_CUTS/MERGES is not the start of a game function")
+        hand = {self.idx[a] for a in FORCED_CUTS}
+        merges = {self.idx[a] for a in MERGES}
+        starts = (starts | hand) - merges
         forced, forced_cuts = 0, set()
         anchors = self.anchors()
         ordered = sorted(starts)
@@ -230,21 +270,14 @@ class Model:
             k = bisect.bisect_right(ordered, hi_a)
             if k < len(ordered) and ordered[k] <= lo_b:
                 continue  # already separated
-            g = min(range(hi_a, lo_b), key=lambda g: (coh[g], -g))
+            g = min((g for g in range(hi_a, lo_b) if g + 1 not in merges), key=lambda g: (coh[g], -g))
             starts.add(g + 1)
             forced_cuts.add(g + 1)
             ordered = sorted(starts)
             forced += 1
-        hand = set()
-        for a in FORCED_CUTS | MERGES:
-            if a not in self.idx:
-                sys.exit(f"tusplit: 0x{a:08X} in FORCED_CUTS/MERGES is not the start of a game function")
-        for a in FORCED_CUTS:
-            starts.add(self.idx[a])
-            hand.add(self.idx[a])
         protected = edges | forced_cuts | hand
         merged = self._merge(sorted(starts), protected, anchors)
-        self._starts -= {self.idx[a] for a in MERGES}
+        self._starts -= merges
         stats = {"zero_gaps": len(cuts), "anchors": len(anchors), "forced": forced, "merged": merged,
                  "hand": len(FORCED_CUTS) + len(MERGES)}
         return sorted(self._starts), stats

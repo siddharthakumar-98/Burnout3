@@ -49,6 +49,9 @@ CARVED = ("d2/", "d3/", "d4/")  # units carved out of the game units for C (C_UN
 FORCED_CUTS: dict[tuple[str, int], tuple[str, str]] = {
     ("data", 0x4873F0): ("runtime/libc", "newlib's impure_data (struct _reent, 0x4873F8) and its stdin/stdout/"
                          "stderr FILEs follow; no code references them, so snapping would hand them to libcdvd"),
+    ("bss", 0x1D6E280): ("game/unit_00222C90", "the memory manager owns the arena 0x67D880-0x1D6D880 (carved up by "
+                         "0x222650) and the heap object 0x1D6D880 (0xA00 bytes, built by its __sinit); the object is "
+                         "only named by other units' code, which would hand everything after the arena to them"),
 }
 SUBSEG = re.compile(r"\s*- \[0x([0-9A-F]+), (\w+), (\S+)\]")
 
