@@ -45,8 +45,9 @@ CFLAGS = "-O4 -str readonly -Cpp_exceptions off"
 # C/C++ translation units, keyed by path under c_cpp/src/ (.c or .cpp) and assembly/asm/ (.s).
 #   linked: link the C object instead of the asm. Set only once objdiff shows 100%; the SHA-1 check
 #           then proves it in the full build.
-#   data:   carved data pieces this unit owns (path under assembly/asm/, ending in .data or .rodata),
-#           mapped to the C object's section that replaces them (e.g. a switch's jump table).
+#   data:   carved data pieces this unit owns (path under assembly/asm/, ending in .data, .rodata, .sdata,
+#           .sbss or .bss), mapped to the C object's section that replaces them (e.g. a switch's jump table).
+#           Float literals need no entry: they stay in the shared .lit4 pool (tools/litfix.py).
 C_UNITS = {
     "d2/func_00131AA0": {"linked": True},
     "d2/func_00131CE0": {"linked": False},  # 98.75%: original computes a large offset in v0, not at
@@ -59,6 +60,9 @@ C_UNITS = {
     "d2/func_0014E7E0": {"linked": True},
     "d2/func_0014EC30": {"linked": True, "data": {"data/d2/func_0014EC30.rodata": ".rodata"}},
     "d2/func_0028B700": {"linked": True},
+    # D3: float literals from the linker's .lit4 pool, retargeted by tools/litfix.py
+    "d3/func_002527F0": {"linked": True},
+    "d3/func_003EA7E0": {"linked": True},
 }
 
 LD_SCRIPT_SPLAT = BUILD / f"{BASENAME}.ld"
@@ -93,6 +97,7 @@ def c_obj(unit: str) -> Path:
 CATEGORIES = {
     "game": ("game", "Burnout 3 game code"),
     "d2": ("game", None),
+    "d3": ("game", None),
     "sinit": ("game", None),
     "rw": ("rw", "RenderWare 3.6"),
     "rwa": ("rwa", "RenderWare Audio (EE side)"),
@@ -111,37 +116,51 @@ def category(unit: str) -> str:
 
 
 def start_alignment(asm: Path) -> int:
-    """Alignment implied by the unit's original start address (16, 8 or 4).
+    """Alignment implied by the unit's original start address (at most 16).
 
-    GNU as gives every section 16-byte alignment, but library objects (built with ee-gcc) start on
-    8-byte boundaries; their asm objects get the smaller alignment so they land where they did."""
+    GNU as gives .text, .data and .bss 16-byte alignment, but library objects (built with ee-gcc) start on
+    8-byte boundaries, and small-data and .bss slices start wherever their unit's variables did; their asm
+    objects get the smaller alignment so they land where they did."""
     with open(ROOT / asm) as f:
         for line in f:
-            m = re.match(r"\s*/\* [0-9A-F]+ ([0-9A-F]{8})", line)
+            # code and data lines carry "/* <rom> <vram> <bytes> */", .bss lines "/* <vram> */"
+            m = re.match(r"\s*/\* (?:[0-9A-F]+ )?([0-9A-F]{8}) ", line)
             if m:
                 vram = int(m.group(1), 16)
-                return 16 if vram % 16 == 0 else 8 if vram % 8 == 0 else 4
+                return next(a for a in (16, 8, 4, 2, 1) if vram % a == 0)
     return 16
 
 
 def write_final_ld_script() -> None:
-    """Copy splat's linker script, pointing each linked C unit at its C object instead of its asm.
+    """Copy splat's linker script, leaving out empty sections and pointing linked C units at their objects.
 
-    Every section line of the unit (.text, .data, .rodata, .bss) is redirected, so the asm object is
-    not pulled into the link at all."""
+    splat lists every object once per section kind (.text, .data, .rodata, .bss), but an asm unit's code object
+    only has code, and each data slice object only its own section. The empty sections are left out: an empty
+    .bss is still 16-byte aligned and would move the slices after it. A linked C unit's object replaces the asm
+    object's .text line, and its data sections replace the data slices listed under "data" in C_UNITS, so the
+    asm object is not pulled into the link at all."""
     script = (ROOT / LD_SCRIPT_SPLAT).read_text()
+    slice_obj = re.compile(r"\.(data|rodata|sdata|sbss|bss|ctor)\.o$")
+    entry = re.compile(r"\s+(\S+\.o)\((.*)\);$")
+    kept = []
+    for line in script.splitlines():
+        m = entry.match(line)
+        if m and m.group(2) != ".text" and not slice_obj.search(m.group(1)):
+            continue  # empty data or .bss section of a code object
+        kept.append(line)
+    script = "\n".join(kept) + "\n"
     for unit, cfg in C_UNITS.items():
         if not cfg["linked"]:
             continue
-        old = f"{asm_obj(unit).as_posix()}("
+        old = f"{asm_obj(unit).as_posix()}(.text)"
         if old not in script:
             sys.exit(f"{unit}: {old} not found in {LD_SCRIPT_SPLAT}; is it carved out in {SPLAT_YAML}?")
-        script = script.replace(old, f"{c_obj(unit).as_posix()}(")
+        script = script.replace(old, f"{c_obj(unit).as_posix()}(.text)")
         for piece, section in cfg.get("data", {}).items():
-            old = f"{(BUILD / ASM_DIR / piece).as_posix()}.o({Path(piece).suffix})"
-            if old not in script:
-                sys.exit(f"{unit}: data piece {old} not found in {LD_SCRIPT_SPLAT}")
-            script = script.replace(old, f"{c_obj(unit).as_posix()}({section})")
+            old = re.compile(rf"{re.escape((BUILD / ASM_DIR / piece).as_posix())}\.o\([^)]*\)")
+            if not old.search(script):
+                sys.exit(f"{unit}: data piece {piece} not found in {LD_SCRIPT_SPLAT}")
+            script = old.sub(f"{c_obj(unit).as_posix()}({section})", script)
     (ROOT / LD_SCRIPT_FINAL).write_text(script)
 
 
@@ -160,12 +179,16 @@ def write_ninja(asm_files: list[Path]) -> None:
         "",
         "rule as_aligned",
         f"  command = {CROSS}as {AS_FLAGS} -o $out.tmp $in && {CROSS}objcopy "
-        "--set-section-alignment .text=$align --set-section-alignment .data=$align "
-        "--set-section-alignment .rodata=$align $out.tmp $out && rm $out.tmp",
+        + " ".join(f"--set-section-alignment {sec}=$align"
+                   for sec in (".text", ".data", ".rodata", ".sdata", ".sbss", ".bss"))
+        + " $out.tmp $out && rm $out.tmp",
         "  description = AS $in (align $align)",
         "",
+        # litfix points the object's float literals at the original's pooled .lit4 entries ($asm is the unit's
+        # original assembly)
         "rule cc",
-        f"  command = MWCIncludes=c_cpp/include wibo {MWCC} {CFLAGS} -c $in -o $out",
+        f"  command = MWCIncludes=c_cpp/include wibo {MWCC} {CFLAGS} -c $in -o $out "
+        "&& python3 tools/litfix.py $out $asm",
         "  description = CC $in",
         "",
         "rule ld",
@@ -195,7 +218,7 @@ def write_ninja(asm_files: list[Path]) -> None:
     for unit in C_UNITS:
         o = c_obj(unit)
         objs.append(o)
-        lines.append(f"build {o}: cc {c_src(unit)}")
+        lines += [f"build {o}: cc {c_src(unit)} | tools/litfix.py", f"  asm = {ASM_DIR / unit}.s"]
     lines += [
         "",
         f"build {elf}: ld | {' '.join(str(o) for o in objs)} {' '.join(str(s) for s in LD_SCRIPTS)}",

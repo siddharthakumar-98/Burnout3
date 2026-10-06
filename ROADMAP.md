@@ -5,16 +5,16 @@ the approach changes.
 
 ## Status
 
-> **Done:** Burnout 3 matching build (byte-identical, from assembly) · **Currently:** verifying it in PCSX2 and
-> decompiling to C · **Next:** Rust rewrite of Burnout 3
+> **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
+> **Currently:** verifying it in PCSX2 and decompiling to C (D4 next) · **Next:** Rust rewrite of Burnout 3
 
 | Phase | Milestone | State | Updated | Notes |
 |---|---|---|---|---|
 | 1 Decomp | D0 Environment | **done** | 2026-10-05 | Tools installed, build image works, ISO and ELF hashes verified, PCSX2 boots the ISO. Ghidra project set up (see Machine state). |
 | 1 Decomp | D1 Matching build | **done** | 2026-10-05 | `tools/dock ninja` rebuilds `SLUS_210.50` byte-identical from splat assembly (8,948 functions, symbolic relocations). The rebuilt ELF boots in PCSX2 to the menu and into a race. |
 | 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-05 | CodeWarrior **3.0.3** (decomp.me `mwcps2-3.0.3-020716`) at `-O4`. 10 functions in 8 C/C++ files (leaf, float, `$gp` global, call, switch with jump table, C++ constructor) match 100% and are linked; the full SHA-1 still matches. Open: `-O3` vs `-O4` not yet separated; two near-misses and one inline-asm function. See `Burnout3_decomp/docs/compiler.md`. |
-| 1 Decomp | D3 Map the binary | **in progress** | 2026-10-05 | Done: `.text` split into game, RenderWare, libsce, runtime, EA DirtySock and Logitech units by compiler fingerprint (8-byte alignment and branch-likely mean ee-gcc); `.data`/`.rodata`/`.init`/`.vtables` identified; VU microcode split into 27 named microprograms; per-category progress in `Burnout3_decomp/PROGRESS.md`. Compiler flags refined to `-O4 -str readonly -Cpp_exceptions off`. Game code split into 377 provisional translation units by `tools/tusplit.py` (strings, float literals, link-order data, vtables, static initializers); RenderWare Audio found inside the game ranges as a call-closed library (`rwa`). `.data`/`.rodata` cut into 292 per-unit slices by `tools/dataslice.py` (96% of code references land in their own unit). Next: `.sdata`/`.bss` per unit and refining units. See `Burnout3_decomp/docs/layout.md`. |
-| 1 Decomp | D4–D11 Decompile subsystems to C | not started | | 10 functions in C so far (the D2 tests) |
+| 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
+| 1 Decomp | D4–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
 | 2 Rust rewrite | R1–R6 | not started | | Starts when the Phase 1 gate passes |
 
 ## Overview
@@ -66,9 +66,9 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 **Goal:** every function in `SLUS_210.50` is C/C++ that the original compiler builds into the exact original bytes,
 and the rebuilt executable boots and plays in PCSX2 with your disc providing the assets.
 
-**Where it stands:** the build pipeline is complete and byte-identical, but every function is still splat-generated
-assembly. Decompiling to C (D2–D11) is the remaining work. It starts with D3, which needs no compiler, and with D2
-once the compiler is available.
+**Where it stands:** the build pipeline is complete and byte-identical, the compiler is locked (D2) and the binary
+is mapped into libraries, sections and provisional translation units with their own data (D3). All but 12 functions
+are still splat-generated assembly; decompiling them to C (D4–D11) is the remaining work.
 
 ### What the binary is
 - Disc `SYSTEM.CNF`: `BOOT2 = cdrom0:\SLUS_210.50;1`, `VER = 1.00`, NTSC. ISO SHA-1 `11a7f335a37d2f3f5c13b967f3072c84f8eded02`.
@@ -88,8 +88,10 @@ once the compiler is available.
   | `0x4D3E00`–`0x4DD820` | `.init`: C++ static initializers |
   | `0x4DD820`–`0x4DDAA0` | `.ctor` |
   | `0x4DDAA0`–`0x4E0680` | `.vtables` |
-  | `0x4E0680`–`0x4E2680` | `.sdata` |
-  | up to `0x1ECEA00` | `.sbss` + `.bss` |
+  | `0x4E0680`–`0x4E1400` | `.lit4`: float literals, pooled by the linker across files |
+  | `0x4E1400`–`0x4E2680` | `.sdata` |
+  | `0x4E2680`–`0x4E3000` | `.sbss` |
+  | `0x4E3000`–`0x1ECEA00` | `.bss`, ending with the libraries' COMMON symbols |
 
 - Disc contents and asset formats: [Burnout3_rust/PLAN.md](Burnout3_rust/PLAN.md).
 
@@ -104,9 +106,10 @@ c_cpp/                    the C/C++ side
   include/                shared headers
 configure.py              one combined build: extracts, splits, assembles, compiles (C_UNITS, CFLAGS), links
 tools/funcmatch.py        compares one function with the original under chosen flags or compiler
+tools/litfix.py           points a C object's float literals at the original's pooled .lit4 entries
 tools/xref.py             cross-references, compiler fingerprints and strings, for mapping the binary
 tools/tusplit.py          proposes game translation-unit boundaries and writes the .text block of b3.yaml
-tools/dataslice.py        cuts .data/.rodata into per-unit slices and writes that block of b3.yaml
+tools/dataslice.py        cuts .data/.rodata/.sdata/.sbss/.bss into per-unit slices and writes that block of b3.yaml
 tools/progress.py         writes PROGRESS.md (per-category progress) from objdiff's report
 PROGRESS.md               generated progress table
 config/                   symbol names, relocation overrides, extra linker script (shared by both sides)
@@ -134,7 +137,7 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | **D0** | Environment | Tools installed, image builds, ELF extracted and hashes verified, PCSX2 boots the ISO | **done** |
 | **D1** | Matching build | Section boundaries recovered. `ninja` builds `build/SLUS_210.50` entirely from generated assembly with SHA-1 `332be40d…`. | **done** |
 | D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files, CodeWarrior 3.0.3 `-O4` |
-| D3 | Map the binary | libsce, runtime (MW runtime, newlib), RenderWare 3.6 and other libraries, and VU microcode labeled and fenced off. Game TU boundaries carved, `.data`/`.rodata` split. Progress reported per category (`game`/`rw`/`rwa`/`sce`/`runtime`/`ea`/`lg`). | **in progress**: libraries, sections, VU and progress done; game split into 377 provisional units with `.data`/`.rodata` slices; small data and `.bss` next |
+| D3 | Map the binary | libsce, runtime (MW runtime, newlib), RenderWare 3.6 and other libraries, and VU microcode labeled and fenced off. Game TU boundaries carved, `.data`/`.rodata` split. Progress reported per category (`game`/`rw`/`rwa`/`sce`/`runtime`/`ea`/`lg`). | **done**: one unit per library, 358 provisional game units, per-unit slices of all five data sections, `.lit4` pool handled for C units |
 | D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization | |
 | D5 | Main loop and game flow | Boot, main loop, game state machine, mode/stage loading, frontend flow | |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
@@ -153,7 +156,7 @@ outward from core code. Within a milestone, work goes one translation unit at a 
 |---|---|
 | Libraries weren't built with CodeWarrior | RenderWare, libsce, DirtySock and Logitech code is ee-gcc output and the MW runtime came from an older CodeWarrior. Matching them (D11) needs those compilers; until then they stay assembly. |
 | Is 3.0.3 the exact compiler? | It matches every D2 test that any available build matches. Two near-misses (`func_0013AE70`, `func_00131CE0`) may point to a build not on decomp.me, or to source forms not found yet. Revisit as more functions are decompiled. |
-| Section and TU boundaries had to be inferred from one merged segment | Sections and library ranges recovered in D3 from compiler fingerprints, the `.data`/`.rodata` streams, version tags and `$Id` strings. Game TU boundaries still to carve, from `.ctor`/`.vtables` order and per-unit data. |
+| Section and TU boundaries had to be inferred from one merged segment | Recovered in D3 from compiler fingerprints, link order in `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`, version tags, `$Id` strings, vtables and static initializers; every object links at its original address. Game units are provisional and get merged or split as decompiling uncovers files. |
 | GNU ld standing in for the MW linker | Match the load segment, then rebuild the container in `tools/elf.py`. Already proven in D1. |
 | R5900-specific code (MMI, VU0 macro, 128-bit loads/stores) | Keep it as inline asm where the original most likely was. Hand-decompile the rest. |
 | C++ under CodeWarrior (mangling, vtables, inlining order) | Lock patterns in D2. Recover class layouts from RTTI strings. |
@@ -181,14 +184,14 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | Check | How | State |
 |---|---|---|
 | Symbolic relocations | The generated assembly uses `jal`/`%hi`/`%lo`/`%gp_rel` symbol references, not hard-coded addresses (about 40k `jal`, 36k `%hi`, 11.7k `%gp_rel`) | **passing** |
-| Shift build | Insert padding early in `.text`, rebuild with the hash check disabled, and boot it in PCSX2. It must still reach the menu and load a race, which proves no address is baked in as a plain number. | to do |
+| Shift build | Insert padding early in `.text`, rebuild with the hash check disabled, and boot it in PCSX2. It must still reach the menu and load a race, which proves no address is baked in as a plain number. First, the 116 symbols that still resolve to absolute addresses (`_end`, and references into the middle of functions or strings; [layout.md](Burnout3_decomp/docs/layout.md#open-items)) must become real symbols. | to do |
 
 ### 3. Each decompiled function matches
 | Check | How | State |
 |---|---|---|
-| Per function | objdiff shows 100% for every function moved from assembly to C | **passing** (10 of 10 linked functions) |
+| Per function | objdiff shows 100% for every function moved from assembly to C | **passing** (12 of 12 linked functions) |
 | Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category | **passing** |
-| No regressions | The SHA-1 check stays green after every function lands. A function that doesn't match stays in assembly. | **passing** (SHA-1 matches with all 10 linked from C, including a C-compiled jump table in `.data`) |
+| No regressions | The SHA-1 check stays green after every function lands. A function that doesn't match stays in assembly. | **passing** (SHA-1 matches with all 12 linked from C, including a C-compiled jump table in `.rodata` and two pooled float literals) |
 
 ### 4. It runs like the original
 All of these run the rebuilt `build/SLUS_210.50` (no `.elf` extension; `build/SLUS_210.50.elf` is an unfinished

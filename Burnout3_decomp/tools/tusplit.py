@@ -10,7 +10,8 @@ The binary has no symbols or file names, so boundaries are inferred (docs/layout
 
   links    Two functions are linked, i.e. evidence says they are in the same file, when they
            - reference the same private item: a string, jump table or other .rodata/.data item, or a float
-             literal (an .sdata word only ever loaded with lwc1; CodeWarrior keeps one literal pool per file);
+             variable in .sdata that is only ever loaded with lwc1 (a file's static constant). Float literals
+             in .lit4 are not evidence: the linker pools them across files (docs/layout.md);
            - reference .rodata/.data out of link order (an earlier function uses a later address than a later
              function), which can only happen inside one file because those sections are laid out in link order;
            - are both methods found in only one vtable;
@@ -45,8 +46,14 @@ GAME = [(0x12EB30, 0x1D8260), (0x211C30, 0x215660), (0x216E40, 0x2372F0), (0x23A
 # Libraries CodeWarrior compiled inside the game ranges, found as call-closed regions: nothing inside calls game
 # code outside, while game code calls in (docs/layout.md). (start, end, unit prefix)
 EMBEDDED_LIBS = [(0x290B10, 0x2B52C0, "rwa")]  # RenderWare Audio, EE side
-RODATA, DATA, SDATA = (0x4B1500, 0x4D3E00), (0x483F00, 0x4B1500), (0x4E0680, 0x4E2680)
+CARVED = ("d2/", "d3/")  # units carved out of the game units for C (C_UNITS in configure.py)
+RODATA, DATA, SDATA = (0x4B1500, 0x4D3E00), (0x483F00, 0x4B1500), (0x4E1400, 0x4E2680)  # .sdata without .lit4
 VTABLES, CTOR, INIT = (0x4DDAA0, 0x4E0680), (0x4DD820, 0x4DDAA0), (0x4D3E00, 0x4DD820)
+SBSS, BSS = (0x4E2680, 0x4E3000), (0x4E3000, 0x1ECE340)  # .bss without the COMMON block at its end
+# Sections laid out in link order (rank correlation of private items with function order 0.98 or more), so data
+# in them used out of order links functions into one file. .bss follows link order too, but more loosely (0.80).
+LINK_ORDERED = (RODATA, DATA, SDATA, SBSS)
+SMALL = (SDATA, SBSS, BSS)  # variables: a piece using one nobody far away uses has data of its own
 WINDOW = 60          # functions; longer links are treated as shared globals
 WEAK_WINDOW = 60     # shorter limit for data that may be global (.data, non-string .rodata)
 ANCHOR_SPREAD = 40   # an initializer is a reliable anchor when its functions lie within this many
@@ -67,7 +74,8 @@ def lib_of(addr: int) -> str:
 
 
 def float_literals() -> set[int]:
-    """.sdata words that are only ever loaded with lwc1: per-file float literal pools."""
+    """.sdata words that are only ever loaded with lwc1: float variables that are never written, most likely a
+    file's static constants. (Not .lit4: the linker pools literals across files, so sharing one proves nothing.)"""
     ops = collections.defaultdict(set)
     for path in (ROOT / "assembly/asm").rglob("*.s"):
         for line in path.read_text().splitlines():
@@ -111,14 +119,12 @@ class Model:
             self.cohesion.append(run)
 
     def private(self, a: int) -> bool:
-        """Data that is probably file-local: anything in .rodata/.data, or a float literal."""
+        """Data that is probably file-local: anything in .rodata/.data, or a float constant in .sdata."""
         return RODATA[0] <= a < RODATA[1] or DATA[0] <= a < DATA[1] or a in self.lits
 
     def strictly_private(self, a: int) -> bool:
-        """Data that is file-local for certain: a string literal or a float literal. Initialized globals in .data
-        and extern const tables in .rodata can be shared between files."""
-        if a in self.lits:
-            return True
+        """Data that is file-local for certain: a string literal. Initialized globals in .data and .sdata, and
+        extern const tables in .rodata, can be shared between files."""
         if not RODATA[0] <= a < RODATA[1]:
             return False
         b = self.rom[a - xref.BASE:a - xref.BASE + 64].split(b"\0")[0]
@@ -142,7 +148,10 @@ class Model:
                     continue  # possibly a shared global or extern const table
                 for u in us[1:]:
                     self.link(us[0], u)
-        for lo_, hi_ in (RODATA, DATA):
+            elif any(lo <= a < hi for lo, hi in SMALL) and max(us) - min(us) <= WEAK_WINDOW:
+                for u in us:
+                    self.evidence[u] = True
+        for lo_, hi_ in LINK_ORDERED:
             spans = []
             for f in G:
                 xs = [a for a in f.refs if lo_ <= a < hi_ and max(self.users[a]) - min(self.users[a]) <= 150]
@@ -225,10 +234,9 @@ class Model:
         return sorted(self._starts), stats
 
     def _merge(self, starts: list[int], protected: set[int], anchors) -> int:
-        """Remove boundaries that the evidence contradicts: a string or float literal used on both sides, an
-        initializer anchor straddling it, or strings out of link order across it. Boundaries that separate two
-        anchors (or range edges) are kept. Only strings and float literals count here, since other data can be
-        shared between files."""
+        """Remove boundaries that the evidence contradicts: a string literal used on both sides, an initializer
+        anchor straddling it, or strings out of link order across it. Boundaries that separate two anchors (or
+        range edges) are kept. Only strings count here, since other data can be shared between files."""
         G = self.G
         drop = set()
         for a, us in self.users.items():
@@ -242,7 +250,7 @@ class Model:
         for k, st in enumerate(starts):
             end = starts[k + 1] if k + 1 < len(starts) else len(G)
             xs = [a for i in range(st, end) for a in G[i].refs
-                  if a not in self.lits and self.strictly_private(a)
+                  if self.strictly_private(a)
                   and max(self.users[a]) - min(self.users[a]) <= 150]
             spans.append((st, min(xs), max(xs)) if xs else None)
         seen = [x for x in spans if x]
@@ -255,15 +263,16 @@ class Model:
         return len(drop)
 
 
-def yaml_lines(model: Model, starts: list[int], carved: dict[int, int]) -> list[str]:
-    """Subsegment lines for the game ranges; carved maps a D2 unit's start to its end (both VRAM)."""
+def yaml_lines(model: Model, starts: list[int], carved: dict[int, tuple[int, str]]) -> list[str]:
+    """Subsegment lines for the game ranges; carved maps a C unit's start to its end (VRAM) and name."""
     G = model.G
-    inside = lambda a: any(lo < a < hi for lo, hi in carved.items())
-    bounds = sorted({G[i].addr for i in starts if not inside(G[i].addr)} | set(carved) | set(carved.values()))
+    inside = lambda a: any(lo < a < hi for lo, (hi, _) in carved.items())
+    bounds = sorted({G[i].addr for i in starts if not inside(G[i].addr)} | set(carved)
+                    | {hi for hi, _ in carved.values()})
     lines = []
     for a in bounds:
         if a in carved:
-            lines.append(f"      - [0x{a - xref.BASE:06X}, asm, d2/func_{a:08X}]")
+            lines.append(f"      - [0x{a - xref.BASE:06X}, asm, {carved[a][1]}]")
         elif game_range(a) is not None:
             lines.append(f"      - [0x{a - xref.BASE:06X}, asm, {lib_of(a)}/unit_{a:08X}]")
     return lines
@@ -277,15 +286,15 @@ def main() -> None:
     starts, stats = m.units()
     sizes = [b - a for a, b in zip(starts, starts[1:] + [len(m.G)])]
     if args.yaml:
-        # The .text block of the current b3.yaml: library lines are kept, game lines are replaced, and D2 units
-        # stay as carved (each ends where the next .text subsegment starts).
+        # The .text block of the current b3.yaml: library lines are kept, game lines are replaced, and C units
+        # (d2/, d3/) stay as carved (each ends where the next .text subsegment starts).
         text = []
         for line in (ROOT / "assembly/splat/b3.yaml").read_text().splitlines():
             mm = re.match(r"\s*- \[0x([0-9A-F]+), asm, (\S+)\]", line)
             if mm:
                 text.append((int(mm.group(1), 16) + xref.BASE, mm.group(2), line))
-        carved = {a: text[k + 1][0] for k, (a, name, _) in enumerate(text) if name.startswith("d2/")}
-        keep = [(a, line) for a, name, line in text if not name.startswith(("game/", "rwa/", "d2/"))]
+        carved = {a: (text[k + 1][0], name) for k, (a, name, _) in enumerate(text) if name.startswith(CARVED)}
+        keep = [(a, line) for a, name, line in text if not name.startswith(("game/", "rwa/") + CARVED)]
         gen = [(int(line.split("[")[1].split(",")[0], 16) + xref.BASE, line)
                for line in yaml_lines(m, starts, carved)]
         print("\n".join(line for _, line in sorted(keep + gen)))

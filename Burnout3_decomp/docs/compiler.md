@@ -68,6 +68,25 @@ four flag sets gave the same result for every function, so the table shows one v
 
 All D2 results above are unchanged with the two flags.
 
+## Small data and float literals (D3)
+
+Test compiles with these flags show how CodeWarrior lays out the data that the `$gp` area holds, which is what the
+small-data map in [layout.md](layout.md#small-data-and-the-lit4-pool) rests on:
+
+| Source | Section | Access |
+|---|---|---|
+| Initialized global or `static` of 8 bytes or less (`float g = 2.5f;`, `double`, `char[8]`) | `.sdata` | `$gp`-relative, `R_MIPS_GPREL16` |
+| Uninitialized, or initialized to zero, 8 bytes or less (`int x;`, `int x = 0;`, `long long`) | `.sbss` | `$gp`-relative |
+| Larger objects | `.data` / `.bss` | `lui`/`addiu` |
+| Float constant that `lui` can't build (`0.85f`, `FLT_MAX`, a `static const float`) | `.lit4`, pooled per file | `lwc1 $fN, 0($gp)`, `R_MIPS_LITERAL` |
+| `1.0f`, `0.5f`, `4.5f` (low 16 bits zero) | none | `lui` + `mtc1` |
+| Global `const float` | `.rodata` | `lui`/`lwc1` |
+
+Every variable and every literal gets a section of its own, and the linker decides the final order. The game's
+linker kept `.sdata`, `.sbss` and `.bss` in link order but pooled `.lit4` across files, so C units keep loading the
+original pooled literals: `tools/litfix.py` retargets their `R_MIPS_LITERAL` relocations after each compile. Double
+arithmetic goes through soft-float helpers (`dpmul`, `dptoli`, …), and the game has no `.lit8` area.
+
 ## Not everything is CodeWarrior
 
 Only the game was built with this compiler. Sony's libraries, RenderWare 3.6, EA DirtySock and the Logitech

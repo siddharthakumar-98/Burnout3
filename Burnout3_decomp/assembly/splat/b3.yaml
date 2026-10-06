@@ -62,11 +62,13 @@ segments:
       - [0x000270, asm, runtime/mwrt]           # Metrowerks C++ runtime (__construct_array, std::exception, ...)
       - [0x002380, asm, sce/libgraph]
       - [0x003BC8, asm, sce/libdma]
-      - [0x004410, asm, sce/mpeg_ipu]           # libmpeg + libipu, not yet split
+      - [0x004410, asm, sce/libmpeg]
+      - [0x00B6C0, asm, sce/libipu]             # called from libmpeg; libipu's .data starts at its tag
       - [0x00BA00, asm, sce/libkernl]           # starts with the syscall stubs
       - [0x017078, asm, runtime/libm]           # newlib/fdlibm double-precision math
       - [0x01E3A0, asm, sce/libcdvd]
-      - [0x01FD00, asm, runtime/libc]           # newlib libc + libgcc soft-float
+      - [0x01FD00, asm, runtime/libc]           # newlib libc
+      - [0x02BFA0, asm, runtime/libgcc]         # __muldi3, __divdi3 family (each with its __clz_tab), fp-bit
       - [0x02EB30, asm, game/unit_0012EB30]
       - [0x031AA0, asm, d2/func_00131AA0]
       - [0x031AC0, asm, game/unit_00131AC0]
@@ -80,6 +82,7 @@ segments:
       - [0x036E10, asm, game/unit_00136E10]
       - [0x03AE70, asm, d2/func_0013AE70]
       - [0x03AEB0, asm, game/unit_0013AEB0]
+      - [0x03B260, asm, game/unit_0013B260]
       - [0x03B670, asm, d2/func_0013B670]
       - [0x03B6A0, asm, game/unit_0013B6A0]
       - [0x03B740, asm, d2/func_0013B740]
@@ -87,6 +90,7 @@ segments:
       - [0x03C910, asm, d2/func_0013C910]
       - [0x03C940, asm, game/unit_0013C940]
       - [0x03D530, asm, game/unit_0013D530]
+      - [0x04DD40, asm, game/unit_0014DD40]
       - [0x04DD80, asm, d2/func_0014DD80]
       - [0x04DDB0, asm, game/unit_0014DDB0]
       - [0x04E7E0, asm, d2/func_0014E7E0]
@@ -97,142 +101,130 @@ segments:
       - [0x05E340, asm, game/unit_0015E340]
       - [0x05E7C0, asm, game/unit_0015E7C0]
       - [0x05F270, asm, game/unit_0015F270]
+      - [0x0A4150, asm, game/unit_001A4150]
       - [0x0A8620, asm, game/unit_001A8620]
       - [0x0AB120, asm, game/unit_001AB120]
-      - [0x0D3850, asm, game/unit_001D3850]
       - [0x0D45B0, asm, game/unit_001D45B0]
       - [0x0D4680, asm, game/unit_001D4680]
-      - [0x0D7A70, asm, game/unit_001D7A70]
       - [0x0D8260, asm, rw/renderware]          # RenderWare 3.6 core, world, PS2 sky2 driver ($Id strings)
       - [0x111C30, asm, game/unit_00211C30]
-      - [0x111CC0, asm, game/unit_00211CC0]
-      - [0x111DD0, asm, game/unit_00211DD0]
-      - [0x111ED0, asm, game/unit_00211ED0]
       - [0x1127A0, asm, game/unit_002127A0]
-      - [0x113100, asm, game/unit_00213100]
+      - [0x1129A0, asm, game/unit_002129A0]
+      - [0x1130F0, asm, game/unit_002130F0]
       - [0x113E10, asm, game/unit_00213E10]
-      - [0x113EB0, asm, game/unit_00213EB0]
-      - [0x115660, asm, sce/pad2_dbc]           # libpad2 + libdbc
+      - [0x115660, asm, sce/libpad2]
+      - [0x115F18, asm, sce/libdbc]
       - [0x116E40, asm, game/unit_00216E40]
       - [0x116FF0, asm, game/unit_00216FF0]
       - [0x117010, asm, game/unit_00217010]
       - [0x117060, asm, game/unit_00217060]
       - [0x117070, asm, game/unit_00217070]
-      - [0x117FC0, asm, game/unit_00217FC0]
+      - [0x117850, asm, game/unit_00217850]
       - [0x11A5F0, asm, game/unit_0021A5F0]
       - [0x11AD60, asm, game/unit_0021AD60]
       - [0x11B000, asm, game/unit_0021B000]
-      - [0x11B4F0, asm, game/unit_0021B4F0]
       - [0x11B5E0, asm, game/unit_0021B5E0]
-      - [0x11B9B0, asm, game/unit_0021B9B0]
-      - [0x11BFA0, asm, game/unit_0021BFA0]
-      - [0x11D8E0, asm, game/unit_0021D8E0]
-      - [0x11E3D0, asm, game/unit_0021E3D0]
-      - [0x11E6F0, asm, game/unit_0021E6F0]
-      - [0x121420, asm, game/unit_00221420]
+      - [0x11B8C0, asm, game/unit_0021B8C0]
+      - [0x1220E0, asm, game/unit_002220E0]
       - [0x12BEE0, asm, game/unit_0022BEE0]
-      - [0x12C050, asm, game/unit_0022C050]
-      - [0x12C340, asm, game/unit_0022C340]
       - [0x12D2E0, asm, game/unit_0022D2E0]
-      - [0x1372F0, asm, sce/insck_mrpc]         # libinsck + libmrpc
+      - [0x1370A0, asm, game/unit_002370A0]
+      - [0x137120, asm, game/unit_00237120]
+      - [0x137200, asm, game/unit_00237200]
+      - [0x1372F0, asm, sce/libinsck]
+      - [0x13A740, asm, sce/libmrpc]
       - [0x13AFD0, asm, game/unit_0023AFD0]
       - [0x13B000, asm, game/unit_0023B000]
-      - [0x140EF0, asm, game/unit_00240EF0]
       - [0x140F30, asm, game/unit_00240F30]
-      - [0x141BC0, asm, sce/mc2_netcnfif_scf]   # libmc2 + netcnfif + libscf
+      - [0x141BC0, asm, sce/libmc2]
+      - [0x1499D0, asm, sce/netcnfif]
+      - [0x14ABB0, asm, sce/libscf]
       - [0x14B2A0, asm, game/unit_0024B2A0]
-      - [0x14D110, asm, game/unit_0024D110]
-      - [0x14D390, asm, game/unit_0024D390]
       - [0x14D4D0, asm, game/unit_0024D4D0]
       - [0x14FDE0, asm, game/unit_0024FDE0]
       - [0x1502D0, asm, game/unit_002502D0]
       - [0x1510F0, asm, game/unit_002510F0]
       - [0x152100, asm, game/unit_00252100]
       - [0x152420, asm, game/unit_00252420]
-      - [0x1540E0, asm, game/unit_002540E0]
+      - [0x1527F0, asm, d3/func_002527F0]
+      - [0x152800, asm, game/unit_00252800]
       - [0x154340, asm, game/unit_00254340]
+      - [0x154C90, asm, game/unit_00254C90]
+      - [0x16B7B0, asm, game/unit_0026B7B0]
       - [0x16B8E0, asm, game/unit_0026B8E0]
+      - [0x16BAA0, asm, game/unit_0026BAA0]
+      - [0x16BC60, asm, game/unit_0026BC60]
+      - [0x16BCA0, asm, game/unit_0026BCA0]
       - [0x16BE90, asm, game/unit_0026BE90]
       - [0x175EF0, asm, game/unit_00275EF0]
+      - [0x176300, asm, game/unit_00276300]
       - [0x176980, asm, game/unit_00276980]
-      - [0x176B00, asm, game/unit_00276B00]
-      - [0x17A900, asm, game/unit_0027A900]
-      - [0x183B30, asm, game/unit_00283B30]
-      - [0x183DB0, asm, game/unit_00283DB0]
-      - [0x183DF0, asm, game/unit_00283DF0]
-      - [0x183E30, asm, game/unit_00283E30]
-      - [0x183EF0, asm, game/unit_00283EF0]
-      - [0x183F30, asm, game/unit_00283F30]
-      - [0x183F70, asm, game/unit_00283F70]
-      - [0x183FA0, asm, game/unit_00283FA0]
       - [0x1840D0, asm, game/unit_002840D0]
       - [0x1842A0, asm, game/unit_002842A0]
       - [0x1844A0, asm, game/unit_002844A0]
       - [0x184650, asm, game/unit_00284650]
-      - [0x184DA0, asm, game/unit_00284DA0]
-      - [0x184FB0, asm, game/unit_00284FB0]
-      - [0x184FF0, asm, game/unit_00284FF0]
-      - [0x1851E0, asm, game/unit_002851E0]
-      - [0x185260, asm, game/unit_00285260]
-      - [0x1852A0, asm, game/unit_002852A0]
-      - [0x185340, asm, game/unit_00285340]
-      - [0x185560, asm, game/unit_00285560]
       - [0x185770, asm, game/unit_00285770]
-      - [0x186970, asm, game/unit_00286970]
-      - [0x186AD0, asm, game/unit_00286AD0]
-      - [0x186C00, asm, game/unit_00286C00]
       - [0x18B700, asm, d2/func_0028B700]
       - [0x18B720, asm, game/unit_0028B720]
       - [0x18FF30, asm, game/unit_0028FF30]
       - [0x190900, asm, game/unit_00290900]
       - [0x190B10, asm, rwa/unit_00290B10]
+      - [0x193430, asm, rwa/unit_00293430]
       - [0x193530, asm, rwa/unit_00293530]
+      - [0x197BE0, asm, rwa/unit_00297BE0]
       - [0x197C30, asm, rwa/unit_00297C30]
+      - [0x197FD0, asm, rwa/unit_00297FD0]
       - [0x198000, asm, rwa/unit_00298000]
       - [0x198070, asm, rwa/unit_00298070]
       - [0x199890, asm, rwa/unit_00299890]
+      - [0x1A0500, asm, rwa/unit_002A0500]
+      - [0x1A05F0, asm, rwa/unit_002A05F0]
+      - [0x1A0630, asm, rwa/unit_002A0630]
       - [0x1A07C0, asm, rwa/unit_002A07C0]
+      - [0x1A0B70, asm, rwa/unit_002A0B70]
+      - [0x1A0C10, asm, rwa/unit_002A0C10]
       - [0x1A0F50, asm, rwa/unit_002A0F50]
       - [0x1AD770, asm, rwa/unit_002AD770]
+      - [0x1AD860, asm, rwa/unit_002AD860]
       - [0x1AD870, asm, rwa/unit_002AD870]
       - [0x1AD8E0, asm, rwa/unit_002AD8E0]
-      - [0x1AE2F0, asm, rwa/unit_002AE2F0]
-      - [0x1B0750, asm, rwa/unit_002B0750]
-      - [0x1B1C00, asm, rwa/unit_002B1C00]
-      - [0x1B4260, asm, rwa/unit_002B4260]
-      - [0x1B4A00, asm, rwa/unit_002B4A00]
+      - [0x1ADDD0, asm, rwa/unit_002ADDD0]
       - [0x1B52C0, asm, game/unit_002B52C0]
-      - [0x1B52D0, asm, game/unit_002B52D0]
       - [0x1B7110, asm, game/unit_002B7110]
       - [0x1B96D0, asm, game/unit_002B96D0]
       - [0x1BCF60, asm, game/unit_002BCF60]
-      - [0x1C28C0, asm, lg/lgcodec]             # Logitech headset audio codec
+      - [0x1BF9A0, asm, game/unit_002BF9A0]
+      - [0x1C20E0, asm, game/unit_002C20E0]
+      - [0x1C28C0, asm, lg/lgcodec]             # Logitech headset audio: Speex, G.723, u-law codecs and liblgaud
       - [0x1E2700, asm, game/unit_002E2700]
+      - [0x1E3350, asm, game/unit_002E3350]
+      - [0x1EF0F0, asm, game/unit_002EF0F0]
+      - [0x1F0440, asm, game/unit_002F0440]
+      - [0x1F3600, asm, game/unit_002F3600]
       - [0x1F3A60, asm, game/unit_002F3A60]
       - [0x1F3B60, asm, game/unit_002F3B60]
-      - [0x1F4BA0, asm, game/unit_002F4BA0]
-      - [0x1F4F10, asm, game/unit_002F4F10]
       - [0x1F4F90, asm, game/unit_002F4F90]
       - [0x1F6210, asm, game/unit_002F6210]
       - [0x1F6370, asm, game/unit_002F6370]
-      - [0x1F66C0, asm, game/unit_002F66C0]
       - [0x1F7E70, asm, game/unit_002F7E70]
       - [0x1F8C50, asm, game/unit_002F8C50]
       - [0x1F9690, asm, game/unit_002F9690]
+      - [0x1F9D00, asm, game/unit_002F9D00]
+      - [0x1F9DD0, asm, game/unit_002F9DD0]
       - [0x1FAD90, asm, game/unit_002FAD90]
-      - [0x1FB120, asm, game/unit_002FB120]
       - [0x1FB3E0, asm, game/unit_002FB3E0]
       - [0x1FD290, asm, game/unit_002FD290]
       - [0x200BE0, asm, game/unit_00300BE0]
       - [0x200BF0, asm, game/unit_00300BF0]
+      - [0x202160, asm, game/unit_00302160]
+      - [0x2030F0, asm, game/unit_003030F0]
       - [0x203170, asm, game/unit_00303170]
       - [0x203FC0, asm, game/unit_00303FC0]
       - [0x204008, asm, lg/lgkbm]               # Logitech USB keyboard/mouse
       - [0x206D90, asm, game/unit_00306D90]
       - [0x2078F0, asm, game/unit_003078F0]
       - [0x2093E0, asm, game/unit_003093E0]
-      - [0x209690, asm, game/unit_00309690]
-      - [0x20A990, asm, game/unit_0030A990]
+      - [0x20A8E0, asm, game/unit_0030A8E0]
       - [0x20A9D0, asm, game/unit_0030A9D0]
       - [0x20B130, asm, game/unit_0030B130]
       - [0x20B190, asm, game/unit_0030B190]
@@ -245,6 +237,7 @@ segments:
       - [0x21E1A0, asm, game/unit_0031E1A0]
       - [0x21FE70, asm, game/unit_0031FE70]
       - [0x221500, asm, game/unit_00321500]
+      - [0x221780, asm, game/unit_00321780]
       - [0x221870, asm, game/unit_00321870]
       - [0x222EA0, asm, game/unit_00322EA0]
       - [0x223730, asm, game/unit_00323730]
@@ -255,13 +248,8 @@ segments:
       - [0x22B2C0, asm, game/unit_0032B2C0]
       - [0x22D1E0, asm, game/unit_0032D1E0]
       - [0x22EE00, asm, game/unit_0032EE00]
-      - [0x231B30, asm, game/unit_00331B30]
-      - [0x231DE0, asm, game/unit_00331DE0]
-      - [0x232E00, asm, game/unit_00332E00]
-      - [0x233140, asm, game/unit_00333140]
-      - [0x2342D0, asm, game/unit_003342D0]
-      - [0x234750, asm, game/unit_00334750]
       - [0x2350F0, asm, game/unit_003350F0]
+      - [0x2356A0, asm, game/unit_003356A0]
       - [0x235DE0, asm, game/unit_00335DE0]
       - [0x23D4E0, asm, game/unit_0033D4E0]
       - [0x23DC20, asm, game/unit_0033DC20]
@@ -274,17 +262,16 @@ segments:
       - [0x24BEA0, asm, game/unit_0034BEA0]
       - [0x24CED0, asm, game/unit_0034CED0]
       - [0x251A90, asm, game/unit_00351A90]
+      - [0x251C60, asm, game/unit_00351C60]
       - [0x252030, asm, game/unit_00352030]
       - [0x2522C0, asm, game/unit_003522C0]
       - [0x2524C0, asm, game/unit_003524C0]
-      - [0x252990, asm, game/unit_00352990]
       - [0x2530E0, asm, game/unit_003530E0]
       - [0x253520, asm, game/unit_00353520]
       - [0x253990, asm, game/unit_00353990]
+      - [0x25EF30, asm, game/unit_0035EF30]
       - [0x25F100, asm, game/unit_0035F100]
-      - [0x260B30, asm, game/unit_00360B30]
-      - [0x261340, asm, game/unit_00361340]
-      - [0x2615F0, asm, game/unit_003615F0]
+      - [0x260AC0, asm, game/unit_00360AC0]
       - [0x261900, asm, game/unit_00361900]
       - [0x2694C0, asm, game/unit_003694C0]
       - [0x269690, asm, game/unit_00369690]
@@ -294,10 +281,11 @@ segments:
       - [0x2736C0, asm, game/unit_003736C0]
       - [0x2744F0, asm, game/unit_003744F0]
       - [0x274900, asm, game/unit_00374900]
+      - [0x275280, asm, game/unit_00375280]
       - [0x2755E0, asm, game/unit_003755E0]
-      - [0x275AA0, asm, game/unit_00375AA0]
       - [0x276330, asm, game/unit_00376330]
       - [0x276880, asm, game/unit_00376880]
+      - [0x278EA0, asm, game/unit_00378EA0]
       - [0x279000, asm, game/unit_00379000]
       - [0x279280, asm, game/unit_00379280]
       - [0x279990, asm, game/unit_00379990]
@@ -323,14 +311,11 @@ segments:
       - [0x28D490, asm, game/unit_0038D490]
       - [0x28E170, asm, game/unit_0038E170]
       - [0x28EB50, asm, game/unit_0038EB50]
-      - [0x2934D0, asm, game/unit_003934D0]
       - [0x2938B0, asm, game/unit_003938B0]
       - [0x294280, asm, game/unit_00394280]
-      - [0x294C30, asm, game/unit_00394C30]
       - [0x295A40, asm, game/unit_00395A40]
       - [0x2963E0, asm, game/unit_003963E0]
       - [0x296FE0, asm, game/unit_00396FE0]
-      - [0x299BA0, asm, game/unit_00399BA0]
       - [0x299C30, asm, game/unit_00399C30]
       - [0x29B250, asm, game/unit_0039B250]
       - [0x29C1C0, asm, game/unit_0039C1C0]
@@ -338,7 +323,6 @@ segments:
       - [0x2A0AA0, asm, game/unit_003A0AA0]
       - [0x2A1010, asm, game/unit_003A1010]
       - [0x2A1800, asm, game/unit_003A1800]
-      - [0x2A1EB0, asm, game/unit_003A1EB0]
       - [0x2A2100, asm, game/unit_003A2100]
       - [0x2A21C0, asm, game/unit_003A21C0]
       - [0x2A2820, asm, game/unit_003A2820]
@@ -346,6 +330,10 @@ segments:
       - [0x2A3250, asm, game/unit_003A3250]
       - [0x2A3D30, asm, game/unit_003A3D30]
       - [0x2A6840, asm, game/unit_003A6840]
+      - [0x2A6A50, asm, game/unit_003A6A50]
+      - [0x2A6FD0, asm, game/unit_003A6FD0]
+      - [0x2A7010, asm, game/unit_003A7010]
+      - [0x2A70B0, asm, game/unit_003A70B0]
       - [0x2A74D0, asm, game/unit_003A74D0]
       - [0x2B17F0, asm, game/unit_003B17F0]
       - [0x2B6280, asm, game/unit_003B6280]
@@ -356,14 +344,15 @@ segments:
       - [0x2B90E0, asm, game/unit_003B90E0]
       - [0x2BA690, asm, game/unit_003BA690]
       - [0x2BB1D0, asm, game/unit_003BB1D0]
+      - [0x2BC240, asm, game/unit_003BC240]
       - [0x2BC360, asm, game/unit_003BC360]
       - [0x2BE630, asm, game/unit_003BE630]
       - [0x2BE670, asm, game/unit_003BE670]
       - [0x2BE9B0, asm, game/unit_003BE9B0]
-      - [0x2BEF60, asm, game/unit_003BEF60]
       - [0x2BFEE0, asm, game/unit_003BFEE0]
-      - [0x2C18F0, asm, game/unit_003C18F0]
       - [0x2C1990, asm, game/unit_003C1990]
+      - [0x2C1C40, asm, game/unit_003C1C40]
+      - [0x2C1E00, asm, game/unit_003C1E00]
       - [0x2C1FC0, asm, game/unit_003C1FC0]
       - [0x2C23A0, asm, game/unit_003C23A0]
       - [0x2C2960, asm, game/unit_003C2960]
@@ -372,13 +361,9 @@ segments:
       - [0x2C35C0, asm, game/unit_003C35C0]
       - [0x2C9210, asm, game/unit_003C9210]
       - [0x2C9A60, asm, game/unit_003C9A60]
-      - [0x2CC770, asm, game/unit_003CC770]
-      - [0x2CCA70, asm, game/unit_003CCA70]
-      - [0x2CCC60, asm, game/unit_003CCC60]
-      - [0x2CD140, asm, game/unit_003CD140]
-      - [0x2CD380, asm, game/unit_003CD380]
+      - [0x2CC2D0, asm, game/unit_003CC2D0]
+      - [0x2CD430, asm, game/unit_003CD430]
       - [0x2CD5E0, asm, game/unit_003CD5E0]
-      - [0x2CD820, asm, game/unit_003CD820]
       - [0x2CDB10, asm, game/unit_003CDB10]
       - [0x2CDB80, asm, game/unit_003CDB80]
       - [0x2CE0A0, asm, game/unit_003CE0A0]
@@ -388,8 +373,6 @@ segments:
       - [0x2D2FD0, asm, game/unit_003D2FD0]
       - [0x2D3158, asm, sce/libnet]
       - [0x2D46A0, asm, game/unit_003D46A0]
-      - [0x2D47D0, asm, game/unit_003D47D0]
-      - [0x2D4C70, asm, game/unit_003D4C70]
       - [0x2D4FE0, asm, game/unit_003D4FE0]
       - [0x2D5510, asm, game/unit_003D5510]
       - [0x2D6C30, asm, game/unit_003D6C30]
@@ -402,6 +385,7 @@ segments:
       - [0x2E7D40, asm, game/unit_003E7D40]
       - [0x2E8DD0, asm, game/unit_003E8DD0]
       - [0x2E9690, asm, game/unit_003E9690]
+      - [0x2EA7E0, asm, d3/func_003EA7E0]
       - [0x2EA7F0, asm, game/unit_003EA7F0]
       - [0x2EABD0, asm, game/unit_003EABD0]
       - [0x2EB0F0, asm, game/unit_003EB0F0]
@@ -411,6 +395,7 @@ segments:
       - [0x2F57A0, asm, game/unit_003F57A0]
       - [0x2F5DC0, asm, game/unit_003F5DC0]
       - [0x2F5E40, asm, game/unit_003F5E40]
+      - [0x2F67F0, asm, game/unit_003F67F0]
       - [0x2FFE48, asm, ea/dirtysock]           # EA DirtySock networking
       - [0x31C900, asm, game/unit_0041C900]
       - [0x31D3E0, asm, game/unit_0041D3E0]
@@ -422,9 +407,8 @@ segments:
       - [0x338910, asm, game/unit_00438910]
       - [0x338C40, asm, game/unit_00438C40]
       - [0x338CF0, asm, game/unit_00438CF0]
-      - [0x338F30, asm, game/unit_00438F30]
       - [0x339110, asm, game/unit_00439110]
-      - [0x3392D0, asm, game/unit_004392D0]
+      - [0x339280, asm, game/unit_00439280]
       - [0x339CF0, asm, game/unit_00439CF0]
       - [0x339DD0, asm, game/unit_00439DD0]
       - [0x33A040, asm, game/unit_0043A040]
@@ -438,22 +422,27 @@ segments:
       - [0x33E000, asm, game/unit_0043E000]
       - [0x33EE40, asm, game/unit_0043EE40]
       - [0x33EFA0, asm, game/unit_0043EFA0]
+      - [0x33F670, asm, game/unit_0043F670]
+      - [0x33FB60, asm, game/unit_0043FB60]
+      - [0x33FD60, asm, game/unit_0043FD60]
+      - [0x33FF50, asm, game/unit_0043FF50]
+      - [0x33FFB0, asm, game/unit_0043FFB0]
       - [0x340490, asm, game/unit_00440490]
       - [0x341590, asm, game/unit_00441590]
       - [0x341D70, asm, game/unit_00441D70]
-      - [0x342AE0, asm, game/unit_00442AE0]
+      - [0x3429F0, asm, game/unit_004429F0]
       - [0x342C90, asm, game/unit_00442C90]
       - [0x343860, asm, lg/lgdev]               # Logitech wheel/force-feedback (liblgdev)
       - [0x345300, asm, game/unit_00445300]
       - [0x345530, asm, game/unit_00445530]
       - [0x345CD0, asm, game/unit_00445CD0]
-      - [0x346A90, asm, game/unit_00446A90]
       - [0x346FA0, asm, game/unit_00446FA0]
       - [0x3474F0, asm, game/unit_004474F0]
       - [0x347640, asm, game/unit_00447640]
       - [0x3480E0, asm, game/unit_004480E0]
       - [0x34A1D0, asm, game/unit_0044A1D0]
       - [0x34A430, asm, game/unit_0044A430]
+      - [0x353E90, asm, game/unit_00453E90]
       - [0x354120, asm, game/unit_00454120]
       - [0x3566E0, asm, game/unit_004566E0]
       - [0x356900, asm, game/unit_00456900]
@@ -464,11 +453,12 @@ segments:
       - [0x35BB10, asm, game/unit_0045BB10]
       - [0x35C890, asm, game/unit_0045C890]
       - [0x35FB10, asm, game/unit_0045FB10]
-      - [0x3601C0, asm, game/unit_004601C0]
       - [0x361150, asm, game/unit_00461150]
       - [0x3614B0, asm, game/unit_004614B0]
       - [0x361F40, asm, game/unit_00461F40]
       - [0x369540, asm, game/unit_00469540]
+      - [0x369550, asm, game/unit_00469550]
+      - [0x369790, asm, game/unit_00469790]
       - [0x3697C0, asm, game/unit_004697C0]
       - [0x3697D0, asm, game/unit_004697D0]
       - [0x369AB0, asm, game/unit_00469AB0]
@@ -508,7 +498,8 @@ segments:
       - [0x383F00, data, runtime/mwrt]
       - [0x383F10, data, sce/libgraph]
       - [0x383F60, data, sce/libdma]
-      - [0x383F70, data, sce/mpeg_ipu]
+      - [0x383F70, data, sce/libmpeg]
+      - [0x3840C0, data, sce/libipu]
       - [0x384140, data, sce/libkernl]
       - [0x385840, data, sce/libcdvd]
       - [0x3873F0, data, runtime/libc]
@@ -516,17 +507,21 @@ segments:
       - [0x388050, data, game/unit_0014DDB0]
       - [0x388080, data, game/unit_0014ECB0]
       - [0x388220, data, game/unit_0015F270]
-      - [0x39A120, data, game/unit_001D3850]
+      - [0x39A120, data, game/unit_001AB120]
       - [0x39A160, data, rw/renderware]
-      - [0x39B080, data, game/unit_00213EB0]
-      - [0x39B0C0, data, sce/pad2_dbc]
-      - [0x39B110, data, game/unit_0021BFA0]
-      - [0x39B510, data, game/unit_00221420]
+      - [0x39B080, data, game/unit_00213E10]
+      - [0x39B0C0, data, sce/libpad2]
+      - [0x39B0F0, data, sce/libdbc]
+      - [0x39B110, data, game/unit_0021B8C0]
+      - [0x39B510, data, game/unit_002220E0]
       - [0x39B540, data, game/unit_0022D2E0]
-      - [0x39B690, data, sce/insck_mrpc]
-      - [0x39B6D0, data, sce/mc2_netcnfif_scf]
-      - [0x39BB30, data, game/unit_00254340]
-      - [0x39BB40, data, game/unit_00286C00]
+      - [0x39B640, data, sce/libinsck]
+      - [0x39B6C0, data, sce/libmrpc]
+      - [0x39B6D0, data, sce/libmc2]
+      - [0x39BA00, data, sce/netcnfif]
+      - [0x39BA10, data, sce/libscf]
+      - [0x39BB30, data, game/unit_00254C90]
+      - [0x39BB40, data, game/unit_00285770]
       - [0x39C470, data, game/unit_0028B720]
       - [0x39D170, data, rwa/unit_00290B10]
       - [0x39D460, data, rwa/unit_00293530]
@@ -536,21 +531,18 @@ segments:
       - [0x39E880, data, rwa/unit_00299890]
       - [0x39EBD0, data, rwa/unit_002A0F50]
       - [0x39F350, data, rwa/unit_002AD870]
-      - [0x39F3C0, data, rwa/unit_002AE2F0]
-      - [0x39F5C0, data, rwa/unit_002B0750]
-      - [0x39F730, data, rwa/unit_002B1C00]
-      - [0x39FE60, data, rwa/unit_002B4A00]
+      - [0x39F3C0, data, rwa/unit_002ADDD0]
       - [0x39FFF0, data, game/unit_002BCF60]
       - [0x3A0180, data, lg/lgcodec]
       - [0x3A46B0, data, lg/lgkbm]
       - [0x3A49D0, data, game/unit_0032B2C0]
       - [0x3A4A60, data, game/unit_0032D1E0]
       - [0x3A4D50, data, game/unit_00345D00]
-      - [0x3A4D60, data, game/unit_003615F0]
+      - [0x3A4D60, data, game/unit_00360AC0]
       - [0x3A4DB0, data, game/unit_00361900]
       - [0x3A4F50, data, game/unit_00376880]
-      - [0x3A4FA0, data, game/unit_0038AF80]
-      - [0x3A4FB0, data, game/unit_0038BFD0]
+      - [0x3A4F70, data, game/unit_0038AF80]
+      - [0x3A4FA0, data, game/unit_0038BFD0]
       - [0x3A4FC0, data, game/unit_0038EB50]
       - [0x3A4FE0, data, game/unit_00399C30]
       - [0x3A5220, data, game/unit_003CDB80]
@@ -558,7 +550,7 @@ segments:
       - [0x3A5250, data, game/unit_003D8D60]
       - [0x3A5400, data, game/unit_003E9690]
       - [0x3A5500, data, game/unit_003EB0F0]
-      - [0x3A55C0, data, game/unit_003F5E40]
+      - [0x3A55C0, data, game/unit_003F67F0]
       - [0x3A5A80, data, ea/dirtysock]
       - [0x3A5BB0, data, game/unit_004381A0]
       - [0x3B0370, data, game/unit_0043A040]
@@ -571,59 +563,58 @@ segments:
       - [0x3B1500, rodata, runtime/mwrt]
       - [0x3B16C0, rodata, sce/libgraph]
       - [0x3B1AA0, rodata, sce/libdma]
-      - [0x3B1B10, rodata, sce/mpeg_ipu]
+      - [0x3B1B10, rodata, sce/libmpeg]
       - [0x3B2040, rodata, sce/libkernl]
       - [0x3B2400, rodata, runtime/libm]
       - [0x3B3270, rodata, sce/libcdvd]
-      - [0x3B3400, rodata, runtime/libc]
+      - [0x3B3560, rodata, runtime/libc]
+      - [0x3B3E80, rodata, runtime/libgcc]
       - [0x3B42A0, rodata, game/unit_0012EB30]
       - [0x3B5B90, rodata, game/unit_00131D20]
       - [0x3B5D80, rodata, game/unit_00134930]
       - [0x3B5D90, rodata, game/unit_00136E10]
       - [0x3B5E50, rodata, game/unit_0013D530]
       - [0x3B5EF0, rodata, game/unit_0014DDB0]
-      - [0x3B5FD0, rodata, game/unit_0014E880]
+      - [0x3B6040, rodata, game/unit_0014E880]
       - [0x3B60D0, rodata, d2/func_0014EC30]
       - [0x3B60F0, rodata, game/unit_0014ECB0]
       - [0x3B7100, rodata, game/unit_0015E340]
       - [0x3B7110, rodata, game/unit_0015F270]
+      - [0x3B77F0, rodata, game/unit_001A4150]
       - [0x3B7A40, rodata, game/unit_001A8620]
       - [0x3B7AB0, rodata, game/unit_001AB120]
-      - [0x3B7DF0, rodata, game/unit_001D3850]
       - [0x3B80F0, rodata, game/unit_001D45B0]
       - [0x3B8110, rodata, game/unit_001D4680]
       - [0x3B8140, rodata, rw/renderware]
       - [0x3B96E0, rodata, game/unit_002127A0]
-      - [0x3B9700, rodata, game/unit_00213100]
-      - [0x3B9850, rodata, game/unit_00213EB0]
-      - [0x3B98C0, rodata, sce/pad2_dbc]
-      - [0x3B9BB0, rodata, game/unit_00217FC0]
+      - [0x3B9700, rodata, game/unit_002130F0]
+      - [0x3B9850, rodata, game/unit_00213E10]
+      - [0x3B98C0, rodata, sce/libpad2]
+      - [0x3B9920, rodata, sce/libdbc]
+      - [0x3B9BB0, rodata, game/unit_00217850]
       - [0x3B9BC0, rodata, game/unit_0021A5F0]
       - [0x3B9C20, rodata, game/unit_0021AD60]
-      - [0x3B9C90, rodata, game/unit_0021B9B0]
-      - [0x3B9CA0, rodata, game/unit_0021E3D0]
-      - [0x3B9D80, rodata, game/unit_0021E6F0]
-      - [0x3B9DA0, rodata, game/unit_00221420]
+      - [0x3B9C90, rodata, game/unit_0021B8C0]
+      - [0x3B9DA0, rodata, game/unit_002220E0]
       - [0x3B9E10, rodata, game/unit_0022D2E0]
-      - [0x3BB1D0, rodata, sce/insck_mrpc]
+      - [0x3BB1D0, rodata, sce/libmrpc]
       - [0x3BB280, rodata, game/unit_0023B000]
-      - [0x3BB300, rodata, sce/mc2_netcnfif_scf]
+      - [0x3BB300, rodata, sce/libmc2]
+      - [0x3BB580, rodata, sce/netcnfif]
+      - [0x3BB5A0, rodata, sce/libscf]
       - [0x3BB610, rodata, game/unit_0024B2A0]
-      - [0x3BB730, rodata, game/unit_0024D390]
       - [0x3BB750, rodata, game/unit_0024D4D0]
       - [0x3BB770, rodata, game/unit_002510F0]
       - [0x3BB7E0, rodata, game/unit_00252100]
-      - [0x3BB8B0, rodata, game/unit_00252420]
+      - [0x3BB8B0, rodata, game/unit_00252800]
       - [0x3BBF70, rodata, game/unit_00254340]
+      - [0x3BBF90, rodata, game/unit_00254C90]
       - [0x3BCA40, rodata, game/unit_0026BE90]
-      - [0x3BDEA0, rodata, game/unit_00276B00]
-      - [0x3BE8C0, rodata, game/unit_0027A900]
+      - [0x3BDCF0, rodata, game/unit_00276980]
       - [0x3BF220, rodata, game/unit_002840D0]
       - [0x3BF230, rodata, game/unit_002844A0]
       - [0x3BF240, rodata, game/unit_00284650]
       - [0x3BF250, rodata, game/unit_00285770]
-      - [0x3BF2A0, rodata, game/unit_00286970]
-      - [0x3BF2B0, rodata, game/unit_00286C00]
       - [0x3BF7D0, rodata, game/unit_0028B720]
       - [0x3C0930, rodata, game/unit_00290900]
       - [0x3C09C0, rodata, rwa/unit_00293530]
@@ -633,14 +624,15 @@ segments:
       - [0x3C1110, rodata, rwa/unit_00299890]
       - [0x3C1620, rodata, rwa/unit_002A07C0]
       - [0x3C1630, rodata, rwa/unit_002A0F50]
-      - [0x3C1950, rodata, rwa/unit_002AE2F0]
-      - [0x3C1B10, rodata, rwa/unit_002B0750]
-      - [0x3C1B70, rodata, rwa/unit_002B1C00]
+      - [0x3C1950, rodata, rwa/unit_002ADDD0]
       - [0x3C1BB0, rodata, game/unit_002B7110]
       - [0x3C1BD0, rodata, game/unit_002B96D0]
       - [0x3C1CD0, rodata, game/unit_002BCF60]
+      - [0x3C1D80, rodata, game/unit_002BF9A0]
       - [0x3C1E20, rodata, lg/lgcodec]
       - [0x3C3760, rodata, game/unit_002E2700]
+      - [0x3C3C40, rodata, game/unit_002E3350]
+      - [0x3C3FF0, rodata, game/unit_002F0440]
       - [0x3C4040, rodata, game/unit_002F3B60]
       - [0x3C4280, rodata, game/unit_002F4F90]
       - [0x3C42D0, rodata, game/unit_002F7E70]
@@ -666,8 +658,6 @@ segments:
       - [0x3C5540, rodata, game/unit_00327540]
       - [0x3C5610, rodata, game/unit_0032B2C0]
       - [0x3C5670, rodata, game/unit_0032EE00]
-      - [0x3C56D0, rodata, game/unit_00331DE0]
-      - [0x3C5770, rodata, game/unit_00332E00]
       - [0x3C57D0, rodata, game/unit_00335DE0]
       - [0x3C5BC0, rodata, game/unit_0033D4E0]
       - [0x3C5BD0, rodata, game/unit_0033DC20]
@@ -683,16 +673,14 @@ segments:
       - [0x3C7170, rodata, game/unit_00353520]
       - [0x3C7190, rodata, game/unit_00353990]
       - [0x3C7210, rodata, game/unit_0035F100]
-      - [0x3C73B0, rodata, game/unit_00360B30]
-      - [0x3C7470, rodata, game/unit_00361340]
-      - [0x3C74B0, rodata, game/unit_003615F0]
+      - [0x3C73B0, rodata, game/unit_00360AC0]
       - [0x3C74C0, rodata, game/unit_00361900]
       - [0x3C80D0, rodata, game/unit_00369690]
       - [0x3C8EE0, rodata, game/unit_00371BE0]
       - [0x3C8EF0, rodata, game/unit_003720F0]
       - [0x3C8F20, rodata, game/unit_00372600]
       - [0x3C8F70, rodata, game/unit_003744F0]
-      - [0x3C8FF0, rodata, game/unit_00375AA0]
+      - [0x3C8FF0, rodata, game/unit_003755E0]
       - [0x3C9020, rodata, game/unit_00376880]
       - [0x3C90B0, rodata, game/unit_00379280]
       - [0x3C90E0, rodata, game/unit_00379990]
@@ -705,7 +693,7 @@ segments:
       - [0x3C93B0, rodata, game/unit_00380A50]
       - [0x3C9460, rodata, game/unit_00381030]
       - [0x3C9470, rodata, game/unit_00382950]
-      - [0x3C9680, rodata, game/unit_00383C10]
+      - [0x3C9690, rodata, game/unit_00383C10]
       - [0x3C96E0, rodata, game/unit_00389830]
       - [0x3C9700, rodata, game/unit_0038A440]
       - [0x3C9730, rodata, game/unit_0038AB40]
@@ -728,7 +716,7 @@ segments:
       - [0x3C9D30, rodata, game/unit_003A2850]
       - [0x3C9DB0, rodata, game/unit_003A3250]
       - [0x3C9DF0, rodata, game/unit_003A3D30]
-      - [0x3C9F40, rodata, game/unit_003A74D0]
+      - [0x3C9F20, rodata, game/unit_003A74D0]
       - [0x3CA0E0, rodata, game/unit_003B17F0]
       - [0x3CA110, rodata, game/unit_003B6280]
       - [0x3CA250, rodata, game/unit_003B8C70]
@@ -753,7 +741,7 @@ segments:
       - [0x3CAE90, rodata, game/unit_003E7AD0]
       - [0x3CAEF0, rodata, game/unit_003E7D40]
       - [0x3CAF50, rodata, game/unit_003E8DD0]
-      - [0x3CBAC0, rodata, game/unit_003E9690]
+      - [0x3CBAD0, rodata, game/unit_003E9690]
       - [0x3CC460, rodata, game/unit_003EA7F0]
       - [0x3CCF80, rodata, game/unit_003EABD0]
       - [0x3CDF20, rodata, game/unit_003EB0F0]
@@ -761,6 +749,7 @@ segments:
       - [0x3CE1E0, rodata, game/unit_003F57A0]
       - [0x3CE460, rodata, game/unit_003F5DC0]
       - [0x3CE500, rodata, game/unit_003F5E40]
+      - [0x3CE840, rodata, game/unit_003F67F0]
       - [0x3CEC80, rodata, ea/dirtysock]
       - [0x3D10E0, rodata, game/unit_0041C900]
       - [0x3D12D0, rodata, game/unit_0041D3E0]
@@ -773,8 +762,11 @@ segments:
       - [0x3D1D10, rodata, game/unit_0043C5B0]
       - [0x3D1D70, rodata, game/unit_0043C880]
       - [0x3D2010, rodata, game/unit_0043DE60]
-      - [0x3D2030, rodata, game/unit_0043E000]
+      - [0x3D2040, rodata, game/unit_0043E000]
       - [0x3D20F0, rodata, game/unit_0043EFA0]
+      - [0x3D2150, rodata, game/unit_0043FD60]
+      - [0x3D2180, rodata, game/unit_0043FF50]
+      - [0x3D2190, rodata, game/unit_0043FFB0]
       - [0x3D21F0, rodata, game/unit_00440490]
       - [0x3D22C0, rodata, game/unit_00441590]
       - [0x3D2310, rodata, game/unit_00441D70]
@@ -801,6 +793,240 @@ segments:
       - { start: 0x3D3E00, type: asm, name: sinit, linker_section_order: .ctor }  # .init: C++ static initializers (__sinit_*)
       - [0x3DD820, ctor, ctor]        # constructor table, null-terminated, padded to 16
       - { start: 0x3DDAA0, type: data, name: vtables, linker_section_order: .ctor }  # .vtables: {RTTI*, 0, methods...}
-      - [0x3E0680, sdata, sdata]      # small data, _gp - 0x7FF0
-      - { type: bss, vram: 0x004E2680, name: bss }
+      # Small data, addressed through $gp (_gp - 0x7FF0 = 0x4E0680). It starts with .lit4, the pool of float
+      # literals that the linker builds from every file's R_MIPS_LITERAL constants and orders by first use, not
+      # link order, so it stays one piece (padded to 0x80). .sdata, .sbss and .bss follow link order and are cut
+      # into one slice per unit by tools/dataslice.py; .bss ends with the COMMON symbols of newlib and lgkbm.
+      - [0x3E0680, sdata, lit4]
+      - [0x3E1400, sdata, game/unit_0012EB30]
+      - [0x3E1414, sdata, game/unit_00131AC0]
+      - [0x3E141C, sdata, game/unit_0013D530]
+      - [0x3E1440, sdata, game/unit_0014DD40]
+      - [0x3E1444, sdata, game/unit_0014DDB0]
+      - [0x3E144C, sdata, game/unit_0014ECB0]
+      - [0x3E1568, sdata, game/unit_0015E340]
+      - [0x3E1570, sdata, game/unit_0015F270]
+      - [0x3E15A8, sdata, game/unit_001AB120]
+      - [0x3E1718, sdata, rw/renderware]
+      - [0x3E1934, sdata, game/unit_002130F0]
+      - [0x3E1944, sdata, game/unit_00213E10]
+      - [0x3E1950, sdata, game/unit_00217850]
+      - [0x3E1954, sdata, game/unit_002220E0]
+      - [0x3E1958, sdata, game/unit_0022BEE0]
+      - [0x3E1964, sdata, game/unit_0022D2E0]
+      - [0x3E196C, sdata, game/unit_00237200]
+      - [0x3E1970, sdata, game/unit_0023B000]
+      - [0x3E1978, sdata, game/unit_0024B2A0]
+      - [0x3E197C, sdata, game/unit_0024D4D0]
+      - [0x3E1980, sdata, game/unit_00254C90]
+      - [0x3E19F0, sdata, game/unit_0026BE90]
+      - [0x3E1A24, sdata, game/unit_00276980]
+      - [0x3E1AEC, sdata, game/unit_00285770]
+      - [0x3E1BA0, sdata, game/unit_0028B720]
+      - [0x3E1C08, sdata, game/unit_00290900]
+      - [0x3E1C10, sdata, rwa/unit_00290B10]
+      - [0x3E1C18, sdata, rwa/unit_00299890]
+      - [0x3E1C4C, sdata, rwa/unit_002A0F50]
+      - [0x3E1C50, sdata, rwa/unit_002ADDD0]
+      - [0x3E1C80, sdata, game/unit_002B96D0]
+      - [0x3E1C88, sdata, game/unit_002E3350]
+      - [0x3E1CF0, sdata, game/unit_002FB3E0]
+      - [0x3E1CFC, sdata, game/unit_002FD290]
+      - [0x3E1D0C, sdata, game/unit_003093E0]
+      - [0x3E1D14, sdata, game/unit_0030B560]
+      - [0x3E1D18, sdata, game/unit_0030E340]
+      - [0x3E1D24, sdata, game/unit_0032D1E0]
+      - [0x3E1D28, sdata, game/unit_0032EE00]
+      - [0x3E1D2C, sdata, game/unit_00335DE0]
+      - [0x3E1D30, sdata, game/unit_00343720]
+      - [0x3E1DF4, sdata, game/unit_00353990]
+      - [0x3E1E28, sdata, game/unit_0035EF30]
+      - [0x3E1E2C, sdata, game/unit_003736C0]
+      - [0x3E1E34, sdata, game/unit_00375280]
+      - [0x3E1E38, sdata, game/unit_00376880]
+      - [0x3E1E40, sdata, game/unit_00383C10]
+      - [0x3E1E70, sdata, game/unit_0038EB50]
+      - [0x3E1E78, sdata, game/unit_00396FE0]
+      - [0x3E1E80, sdata, game/unit_00399C30]
+      - [0x3E1E84, sdata, game/unit_003A74D0]
+      - [0x3E1E88, sdata, game/unit_003B8550]
+      - [0x3E1E8C, sdata, game/unit_003BB1D0]
+      - [0x3E1E98, sdata, game/unit_003C9A60]
+      - [0x3E1EA0, sdata, game/unit_003D8D60]
+      - [0x3E1EA8, sdata, game/unit_003EB0F0]
+      - [0x3E1EC0, sdata, game/unit_003F67F0]
+      - [0x3E1F30, sdata, ea/dirtysock]
+      - [0x3E25D8, sdata, game/unit_0041D3E0]
+      - [0x3E25F0, sdata, game/unit_0042C2A0]
+      - [0x3E25F4, sdata, game/unit_0043A040]
+      - [0x3E25F8, sdata, game/unit_0043B770]
+      - [0x3E261C, sdata, game/unit_004429F0]
+      - [0x3E2634, sdata, game/unit_00445CD0]
+      - [0x3E2640, sdata, game/unit_0044A430]
+      - [0x3E2644, sdata, game/unit_00454120]
+      - [0x3E2658, sdata, game/unit_0045BB10]
+      - [0x3E2668, sdata, game/unit_00469550]
+      - { type: sbss, vram: 0x004E2680, name: game/unit_0012EB30 }
+      - { type: sbss, vram: 0x004E26A4, name: game/unit_00136480 }
+      - { type: sbss, vram: 0x004E26A8, name: game/unit_0014ECB0 }
+      - { type: sbss, vram: 0x004E26B4, name: game/unit_0015F270 }
+      - { type: sbss, vram: 0x004E2704, name: game/unit_001A8620 }
+      - { type: sbss, vram: 0x004E2708, name: game/unit_001AB120 }
+      - { type: sbss, vram: 0x004E2754, name: rw/renderware }
+      - { type: sbss, vram: 0x004E28C4, name: game/unit_002129A0 }
+      - { type: sbss, vram: 0x004E28D8, name: game/unit_00217850 }
+      - { type: sbss, vram: 0x004E2910, name: game/unit_0021B5E0 }
+      - { type: sbss, vram: 0x004E291C, name: game/unit_0021B8C0 }
+      - { type: sbss, vram: 0x004E2938, name: game/unit_002220E0 }
+      - { type: sbss, vram: 0x004E2950, name: game/unit_0022D2E0 }
+      - { type: sbss, vram: 0x004E2964, name: game/unit_002370A0 }
+      - { type: sbss, vram: 0x004E2968, name: game/unit_0024B2A0 }
+      - { type: sbss, vram: 0x004E29C8, name: game/unit_0024D4D0 }
+      - { type: sbss, vram: 0x004E29CC, name: game/unit_002510F0 }
+      - { type: sbss, vram: 0x004E29D0, name: game/unit_00254340 }
+      - { type: sbss, vram: 0x004E29E8, name: game/unit_00254C90 }
+      - { type: sbss, vram: 0x004E2A14, name: game/unit_0026BE90 }
+      - { type: sbss, vram: 0x004E2A2C, name: game/unit_00276980 }
+      - { type: sbss, vram: 0x004E2A38, name: game/unit_00285770 }
+      - { type: sbss, vram: 0x004E2A40, name: game/unit_0028B720 }
+      - { type: sbss, vram: 0x004E2A74, name: rwa/unit_00290B10 }
+      - { type: sbss, vram: 0x004E2AE8, name: rwa/unit_00293530 }
+      - { type: sbss, vram: 0x004E2B58, name: rwa/unit_00297BE0 }
+      - { type: sbss, vram: 0x004E2B60, name: rwa/unit_00297C30 }
+      - { type: sbss, vram: 0x004E2B68, name: rwa/unit_00298070 }
+      - { type: sbss, vram: 0x004E2B88, name: rwa/unit_00299890 }
+      - { type: sbss, vram: 0x004E2B90, name: rwa/unit_002A05F0 }
+      - { type: sbss, vram: 0x004E2B94, name: rwa/unit_002A0C10 }
+      - { type: sbss, vram: 0x004E2BA0, name: rwa/unit_002A0F50 }
+      - { type: sbss, vram: 0x004E2BD8, name: rwa/unit_002ADDD0 }
+      - { type: sbss, vram: 0x004E2D00, name: game/unit_002BCF60 }
+      - { type: sbss, vram: 0x004E2D30, name: game/unit_002E3350 }
+      - { type: sbss, vram: 0x004E2D44, name: game/unit_002F9D00 }
+      - { type: sbss, vram: 0x004E2D48, name: game/unit_00302160 }
+      - { type: sbss, vram: 0x004E2D4C, name: game/unit_00303170 }
+      - { type: sbss, vram: 0x004E2D50, name: game/unit_00306D90 }
+      - { type: sbss, vram: 0x004E2D5C, name: game/unit_0030E340 }
+      - { type: sbss, vram: 0x004E2D60, name: game/unit_0031B6A0 }
+      - { type: sbss, vram: 0x004E2D68, name: game/unit_00321870 }
+      - { type: sbss, vram: 0x004E2D90, name: game/unit_0032EE00 }
+      - { type: sbss, vram: 0x004E2DA4, name: game/unit_003356A0 }
+      - { type: sbss, vram: 0x004E2DA8, name: game/unit_00335DE0 }
+      - { type: sbss, vram: 0x004E2DB0, name: game/unit_0033DC20 }
+      - { type: sbss, vram: 0x004E2DB4, name: game/unit_00343720 }
+      - { type: sbss, vram: 0x004E2DF8, name: game/unit_00360AC0 }
+      - { type: sbss, vram: 0x004E2E1C, name: game/unit_00361900 }
+      - { type: sbss, vram: 0x004E2E40, name: game/unit_00375280 }
+      - { type: sbss, vram: 0x004E2E50, name: game/unit_003755E0 }
+      - { type: sbss, vram: 0x004E2E58, name: game/unit_00380A50 }
+      - { type: sbss, vram: 0x004E2E78, name: game/unit_00382FB0 }
+      - { type: sbss, vram: 0x004E2E80, name: game/unit_00383C10 }
+      - { type: sbss, vram: 0x004E2E8C, name: game/unit_00399C30 }
+      - { type: sbss, vram: 0x004E2E94, name: game/unit_003A74D0 }
+      - { type: sbss, vram: 0x004E2EC8, name: game/unit_003B17F0 }
+      - { type: sbss, vram: 0x004E2ECC, name: game/unit_003BB1D0 }
+      - { type: sbss, vram: 0x004E2ED4, name: game/unit_003C35C0 }
+      - { type: sbss, vram: 0x004E2EE0, name: game/unit_003D0B60 }
+      - { type: sbss, vram: 0x004E2EF8, name: game/unit_003D8D60 }
+      - { type: sbss, vram: 0x004E2F00, name: game/unit_003EA7F0 }
+      - { type: sbss, vram: 0x004E2F10, name: game/unit_003EB0F0 }
+      - { type: sbss, vram: 0x004E2F40, name: ea/dirtysock }
+      - { type: sbss, vram: 0x004E2F54, name: game/unit_0041D3E0 }
+      - { type: sbss, vram: 0x004E2F58, name: game/unit_0042C2A0 }
+      - { type: sbss, vram: 0x004E2F5C, name: game/unit_004356A0 }
+      - { type: sbss, vram: 0x004E2F60, name: game/unit_0043F670 }
+      - { type: sbss, vram: 0x004E2F88, name: game/unit_00440490 }
+      - { type: sbss, vram: 0x004E2F98, name: game/unit_004480E0 }
+      - { type: sbss, vram: 0x004E2FA8, name: game/unit_0044A430 }
+      - { type: sbss, vram: 0x004E2FB8, name: game/unit_00454120 }
+      - { type: sbss, vram: 0x004E2FBC, name: game/unit_00461F40 }
+      - { type: sbss, vram: 0x004E2FD0, name: game/unit_00469550 }
+      - { type: sbss, vram: 0x004E2FDC, name: game/unit_004697D0 }
+      - { type: bss, vram: 0x004E3000, name: runtime/mwrt }
+      - { type: bss, vram: 0x004E3008, name: sce/libdma }
+      - { type: bss, vram: 0x004E3040, name: sce/libmpeg }
+      - { type: bss, vram: 0x004E3240, name: sce/libkernl }
+      - { type: bss, vram: 0x004EAF40, name: sce/libcdvd }
+      - { type: bss, vram: 0x004ED7E0, name: game/unit_0012EB30 }
+      - { type: bss, vram: 0x004F5080, name: game/unit_00131D20 }
+      - { type: bss, vram: 0x004F509C, name: game/unit_00134930 }
+      - { type: bss, vram: 0x0051BF9C, name: game/unit_00136480 }
+      - { type: bss, vram: 0x0051C624, name: game/unit_00136E10 }
+      - { type: bss, vram: 0x0051C644, name: game/unit_0013B260 }
+      - { type: bss, vram: 0x0051C660, name: game/unit_0014ECB0 }
+      - { type: bss, vram: 0x00665EB0, name: game/unit_0015F270 }
+      - { type: bss, vram: 0x0066C540, name: game/unit_001A8620 }
+      - { type: bss, vram: 0x0066C580, name: game/unit_001AB120 }
+      - { type: bss, vram: 0x0066EB20, name: game/unit_001D4680 }
+      - { type: bss, vram: 0x00670AE0, name: rw/renderware }
+      - { type: bss, vram: 0x00676440, name: game/unit_002129A0 }
+      - { type: bss, vram: 0x00676480, name: sce/libpad2 }
+      - { type: bss, vram: 0x006797C8, name: sce/libdbc }
+      - { type: bss, vram: 0x0067CD90, name: game/unit_00217850 }
+      - { type: bss, vram: 0x0067CFD0, name: game/unit_0021B8C0 }
+      - { type: bss, vram: 0x0067D834, name: game/unit_002220E0 }
+      - { type: bss, vram: 0x01D6EDD0, name: game/unit_0022D2E0 }
+      - { type: bss, vram: 0x01D80700, name: game/unit_002370A0 }
+      - { type: bss, vram: 0x01D80710, name: sce/libinsck }
+      - { type: bss, vram: 0x01D80880, name: sce/libmrpc }
+      - { type: bss, vram: 0x01D810C0, name: sce/libmc2 }
+      - { type: bss, vram: 0x01D99880, name: sce/netcnfif }
+      - { type: bss, vram: 0x01D9B930, name: game/unit_0024B2A0 }
+      - { type: bss, vram: 0x01D9BB10, name: game/unit_002510F0 }
+      - { type: bss, vram: 0x01D9CE80, name: game/unit_00254340 }
+      - { type: bss, vram: 0x01D9D190, name: game/unit_00254C90 }
+      - { type: bss, vram: 0x01E32AE0, name: game/unit_0026BE90 }
+      - { type: bss, vram: 0x01E75644, name: game/unit_00276980 }
+      - { type: bss, vram: 0x01E7AA40, name: game/unit_00285770 }
+      - { type: bss, vram: 0x01E7C8C0, name: game/unit_0028B720 }
+      - { type: bss, vram: 0x01E7CB30, name: rwa/unit_00290B10 }
+      - { type: bss, vram: 0x01E7CF50, name: rwa/unit_00293530 }
+      - { type: bss, vram: 0x01E7D160, name: rwa/unit_00297C30 }
+      - { type: bss, vram: 0x01E7D1E0, name: rwa/unit_00298000 }
+      - { type: bss, vram: 0x01E7D210, name: rwa/unit_00298070 }
+      - { type: bss, vram: 0x01E7D2F0, name: rwa/unit_00299890 }
+      - { type: bss, vram: 0x01E7D4D0, name: rwa/unit_002A07C0 }
+      - { type: bss, vram: 0x01E7D530, name: rwa/unit_002A0B70 }
+      - { type: bss, vram: 0x01E7D560, name: rwa/unit_002A0F50 }
+      - { type: bss, vram: 0x01E81080, name: rwa/unit_002AD860 }
+      - { type: bss, vram: 0x01E810B0, name: rwa/unit_002ADDD0 }
+      - { type: bss, vram: 0x01E83670, name: game/unit_002B7110 }
+      - { type: bss, vram: 0x01E85A50, name: game/unit_002BCF60 }
+      - { type: bss, vram: 0x01E86260, name: lg/lgcodec }
+      - { type: bss, vram: 0x01E86500, name: game/unit_002E3350 }
+      - { type: bss, vram: 0x01E865E0, name: game/unit_002F3600 }
+      - { type: bss, vram: 0x01E866D0, name: game/unit_002F3B60 }
+      - { type: bss, vram: 0x01E86D50, name: game/unit_002F9D00 }
+      - { type: bss, vram: 0x01E86D60, name: game/unit_002FB3E0 }
+      - { type: bss, vram: 0x01E86DC0, name: lg/lgkbm }
+      - { type: bss, vram: 0x01E88900, name: game/unit_00306D90 }
+      - { type: bss, vram: 0x01E88980, name: game/unit_0030A8E0 }
+      - { type: bss, vram: 0x01E88A80, name: game/unit_0030B560 }
+      - { type: bss, vram: 0x01E894FC, name: game/unit_0030E340 }
+      - { type: bss, vram: 0x01E94F30, name: game/unit_003192F0 }
+      - { type: bss, vram: 0x01EA3190, name: game/unit_0031CDA0 }
+      - { type: bss, vram: 0x01EA31C0, name: game/unit_00321870 }
+      - { type: bss, vram: 0x01EA31E0, name: game/unit_0032D1E0 }
+      - { type: bss, vram: 0x01EA3240, name: game/unit_0032EE00 }
+      - { type: bss, vram: 0x01EA32B0, name: game/unit_00335DE0 }
+      - { type: bss, vram: 0x01EA39C0, name: game/unit_00343720 }
+      - { type: bss, vram: 0x01EA3F40, name: game/unit_0034CED0 }
+      - { type: bss, vram: 0x01EA3F80, name: game/unit_00351C60 }
+      - { type: bss, vram: 0x01EA3FA0, name: game/unit_00360AC0 }
+      - { type: bss, vram: 0x01EA4060, name: game/unit_00361900 }
+      - { type: bss, vram: 0x01EA48F0, name: game/unit_00372600 }
+      - { type: bss, vram: 0x01EA4910, name: game/unit_003755E0 }
+      - { type: bss, vram: 0x01EA4980, name: game/unit_00379280 }
+      - { type: bss, vram: 0x01EA49A0, name: game/unit_00382950 }
+      - { type: bss, vram: 0x01EA4B00, name: game/unit_00383C10 }
+      - { type: bss, vram: 0x01EA4B80, name: game/unit_0038EB50 }
+      - { type: bss, vram: 0x01EA4BA0, name: game/unit_00399C30 }
+      - { type: bss, vram: 0x01EA4CC0, name: game/unit_003A3D30 }
+      - { type: bss, vram: 0x01EA4D30, name: game/unit_003B90E0 }
+      - { type: bss, vram: 0x01EA50F0, name: game/unit_003BB1D0 }
+      - { type: bss, vram: 0x01EA5470, name: game/unit_003BFEE0 }
+      - { type: bss, vram: 0x01EA6480, name: game/unit_003F67F0 }
+      - { type: bss, vram: 0x01EB5D80, name: ea/dirtysock }
+      - { type: bss, vram: 0x01EBE360, name: game/unit_0041D3E0 }
+      - { type: bss, vram: 0x01ECD9F0, name: game/unit_0044A430 }
+      - { type: bss, vram: 0x01ECE340, name: common }
   - [0x3E2680]

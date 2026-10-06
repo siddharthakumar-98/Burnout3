@@ -33,9 +33,10 @@ SECTIONS = [
     (0x4D3E00, 0x4DD820, "init"),
     (0x4DD820, 0x4DDAA0, "ctor"),
     (0x4DDAA0, 0x4E0680, "vtables"),
-    (0x4E0680, 0x4E2680, "sdata"),
-    (0x4E2680, 0x4E8680, "sbss"),
-    (0x4E8680, 0x1ECEA00, "bss"),
+    (0x4E0680, 0x4E1400, "lit4"),
+    (0x4E1400, 0x4E2680, "sdata"),
+    (0x4E2680, 0x4E3000, "sbss"),
+    (0x4E3000, 0x1ECEA00, "bss"),
 ]
 
 INSN = re.compile(r"\s*/\* [0-9A-F]+ ([0-9A-F]{8}) [0-9A-F]{8} \*/\s+(\S+)\s*(.*)")

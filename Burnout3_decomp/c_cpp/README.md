@@ -12,15 +12,17 @@ the original bytes.
 
 1. Carve the function(s) out of their `game/unit_<VRAM>` in `../assembly/splat/b3.yaml`, and name the remainder
    after them `game/unit_<VRAM>`. CodeWarrior functions always start on 16-byte boundaries, so the unit's start
-   and end are too. (`tools/tusplit.py --yaml` regenerates the game units but keeps `d2/` carves.)
+   and end are too. (`tools/tusplit.py --yaml` regenerates the game units but keeps `d2/` and `d3/` carves.)
 2. Write the C/C++ in `src/` with the same path.
 3. Iterate with `tools/dock python3 tools/funcmatch.py <function> c_cpp/src/<unit>.c` until it reports 100%.
 4. Add the unit to `C_UNITS` in `../configure.py` with `linked: True`. If it owns data, such as a switch's jump
-   table, also carve that data and map it under `data`. Every game unit already has its own `.data`/`.rodata`
-   slices (`data/<unit>.data`, `data/<unit>.rodata`), so a C file that replaces a whole unit maps those.
+   table, also carve that data and map it under `data`. Game units already have their own slices of `.data`,
+   `.rodata`, `.sdata`, `.sbss` and `.bss` (`data/<unit>.data`, `data/<unit>.sbss`, …), so a C file that replaces
+   a whole unit maps those. Float literals need nothing: they stay in the shared `.lit4` pool, and the build points
+   the object at them (`../tools/litfix.py`, see [../docs/layout.md](../docs/layout.md#small-data-and-the-lit4-pool)).
 5. Run `tools/dock python3 configure.py && tools/dock ninja`. The build must still print `332be40d… OK`.
 
-## Current units (D2 compiler tests)
+## Current units (D2 compiler tests, D3 small-data tests)
 
 | Unit | Functions | Tests | Status |
 |---|---|---|---|
@@ -35,6 +37,8 @@ the original bytes.
 | `src/d2/func_00131CE0.c` | `func_00131CE0` | large struct offsets | 98.75%, not linked |
 | `src/d2/func_0013AE70.c` | `func_0013AE70` | call or return 0 | 90.38%, not linked |
 | `src/d2/func_0013B670.c` | `func_0013B670` | min/max clamp | draft; the original is inline asm |
+| `src/d3/func_002527F0.c` | `func_002527F0` | float literal from the `.lit4` pool | 100%, linked |
+| `src/d3/func_003EA7E0.c` | `func_003EA7E0` | float literal in a delay slot | 100%, linked |
 
 Class and struct names such as `CUnk0028B700` are placeholders until the real ones are known. Details of how the
 compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
