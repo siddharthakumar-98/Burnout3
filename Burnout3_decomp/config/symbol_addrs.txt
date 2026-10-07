@@ -308,3 +308,27 @@ __fixdfsi = 0x0012E960; // type:func
 __make_dp = 0x0012EA00; // type:func
 __truncdfsf2 = 0x0012EA30; // type:func
 __fixunsdfsi = 0x0012EA88; // type:func
+
+// D4: d4/ustring, 16-bit strings and UTF-8 conversion (c_cpp/src/d4/ustring.c; names are ours)
+ustrSetSeparators = 0x002130F0; // type:func
+ustrFromFloat = 0x00213100; // type:func
+ustrFromFloatNoSep = 0x00213360; // type:func
+ustrFromInt = 0x002135C0; // type:func
+ustrFromIntNoSep = 0x002136F0; // type:func
+ustrFromUInt = 0x002137F0; // type:func
+ustrncat = 0x002138C0; // type:func
+ustrcat = 0x00213940; // type:func
+ustrncpy = 0x002139A0; // type:func
+ustrcpy = 0x00213A00; // type:func
+ustrlen = 0x00213A30; // type:func
+ustrFromUtf8Checked = 0x00213A60; // type:func
+ustrFromUtf8 = 0x00213BE0; // type:func
+ustrToUtf8 = 0x00213CB0; // type:func
+trailingBytesForUTF8 = 0x004B9700; // type:u8 size:0x100
+offsetsFromUTF8 = 0x004B9800; // type:u32 size:0x18
+firstByteMark = 0x004B9818; // type:u8 size:0x7
+powersOf10 = 0x004B9820; // type:f32 size:0x28
+thousandsSep = 0x004E1934; // type:u16 size:0x4
+decimalPoint = 0x004E1938; // type:u16 size:0x4
+plusSign = 0x004E193C; // type:u16 size:0x4
+minusSign = 0x004E1940; // type:u16 size:0x4

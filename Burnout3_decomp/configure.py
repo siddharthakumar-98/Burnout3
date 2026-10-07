@@ -63,6 +63,8 @@ C_UNITS = {
     # D3: float literals from the linker's .lit4 pool, retargeted by tools/litfix.py
     "d3/func_002527F0": {"linked": True},
     "d3/func_003EA7E0": {"linked": True},
+    # D4: whole game units, with their data slices
+    "d4/ustring": {"linked": False},  # D4.3 step 2 in progress: 6 of 14 functions at 100% (docs/d4.md)
 }
 
 LD_SCRIPT_SPLAT = BUILD / f"{BASENAME}.ld"
@@ -98,6 +100,7 @@ CATEGORIES = {
     "game": ("game", "Burnout 3 game code"),
     "d2": ("game", None),
     "d3": ("game", None),
+    "d4": ("game", None),
     "sinit": ("game", None),
     "rw": ("rw", "RenderWare 3.6"),
     "rwa": ("rwa", "RenderWare Audio (EE side)"),

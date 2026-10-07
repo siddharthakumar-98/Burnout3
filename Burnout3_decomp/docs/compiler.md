@@ -122,6 +122,19 @@ all give 74.38%, while `-O2` (54.38%, no scheduling) and `-O4,p` (67.50%) are fu
 source, to settle once its callers are understood. CodeWarrior has no separate scheduling switch: scheduling comes
 with `-opt level=3` and above. `-O3` and `-O4` still produce the same code for everything tried.
 
+## A later build? (D4)
+
+`ustrFromUtf8` (`0x213BE0`, a `ConvertUTF.c`-style loop) keeps its loop test at the top, with the second condition
+as an assembler pseudo-branch (`slti $at`; `bnez $at`) and both delay slots empty. 3.0.3 rotates the loop or fills
+the slots with every source shape tried (11 variants, all flag sets: `-O3`, `-O4`, `-O4,s`, `-O4,p` give 70.9% for the
+`while (*src && size >= 2)` form). Compiled with every build on decomp.me, the 2003-2005 `3.0.1` builds come much
+closer, and **3.0.1 build 119 (2004-09-14) reaches 99.8%**: only the register of that one comparison differs (`v1`
+instead of `$at`). Those builds were ruled out above only by their `3.0.0` version stamp, but the stamp in the
+game's `.comment` may come from a prebuilt library object (the MW runtime is built with an older compiler), and
+Burnout 3 shipped in September 2004. `func_0013AE70`'s empty delay slot (above) is the same symptom. To settle next:
+run every matched function and the D2 tests through build 119 and its neighbours (b103, b145), and look for a build
+or flag that gives `$at` there.
+
 ## Not everything is CodeWarrior
 
 Only the game was built with this compiler. Sony's libraries, RenderWare 3.6, EA DirtySock and the Logitech
