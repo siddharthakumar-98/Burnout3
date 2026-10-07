@@ -4,6 +4,7 @@
 Run inside the build container after configure.py has generated assembly/asm/:
 
     tools/dock python3 tools/funcmatch.py func_0013C930 c_cpp/src/d2/foo.c -f=-O3 -f="-O4 -inline auto"
+    tools/dock python3 tools/funcmatch.py --all c_cpp/src/d4/pool.c     one line per function the file defines
 
 The function's assembly is pulled out of assembly/asm/ into its own object (the target), the source is
 compiled with CodeWarrior once per flag set (the base), and objdiff reports how well they match. Float literals in
@@ -86,10 +87,42 @@ def disasm(obj: Path, name: str) -> list[str]:
     return out
 
 
+def defined_functions(obj: Path) -> list[str]:
+    """Global functions an object defines, in address order of their sections."""
+    r = sh(f"{CROSS}nm --defined-only {obj}")
+    return [line.split()[-1] for line in r.stdout.splitlines() if line.split()[1:2] == ["T"]]
+
+
+def match_all(compiler: Path, src: Path, flags: str) -> int:
+    """Compile once, compare every function; prints `pct name`. Exit 0 only if all are 100%."""
+    o = WORK / f"{src.stem}.all.o"
+    env = dict(os.environ, MWCIncludes="c_cpp/include")
+    r = sh(f"wibo {compiler} {flags} -c {src} -o {o}", env=env)
+    if r.returncode or not (ROOT / o).exists():
+        print("compile failed\n" + r.stdout + r.stderr)
+        return 2
+    names = defined_functions(o)
+    done = 0
+    for name in names:
+        try:
+            target = build_target(name)
+            litfix.fix(ROOT / o, extract_function(name)[0])
+        except SystemExit:
+            print(f"{'--':>7}  {name} (not in the generated assembly)")
+            continue
+        pct = match_percent(target, o, name)
+        done += pct == 100.0
+        print(f"{'missing' if pct is None else f'{pct:6.2f}%':>7}  {name}")
+    print(f"{done}/{len(names)} at 100%")
+    return 0 if done == len(names) else 1
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("function", help="symbol name in the generated assembly, e.g. func_0013C930")
+    p.add_argument("function", nargs="?", help="symbol name in the generated assembly, e.g. func_0013C930")
     p.add_argument("source", type=Path, help="C or C++ file defining that symbol")
+    p.add_argument("--all", action="store_true",
+                   help="compare every function the source defines (first flag set only), one line each, no diffs")
     p.add_argument("-f", "--flags", action="append", help=f"compiler flags to try, written -f=FLAGS (default: {CFLAGS!r})")
     p.add_argument("-q", "--quiet", action="store_true", help="don't print disassembly on mismatch")
     p.add_argument("-c", "--compiler", type=Path, default=MWCC,
@@ -100,6 +133,10 @@ def main() -> None:
     if (ROOT / compiler).is_dir():
         compiler = compiler / "mwccps2.exe"
     (ROOT / WORK).mkdir(parents=True, exist_ok=True)
+    if args.all:
+        sys.exit(match_all(compiler, args.source, (args.flags or [CFLAGS])[0]))
+    if not args.function:
+        p.error("give a function, or --all")
     target = build_target(args.function)
     asm = extract_function(args.function)[0]
     best = 0.0

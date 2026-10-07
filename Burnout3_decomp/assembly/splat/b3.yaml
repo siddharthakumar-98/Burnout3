@@ -113,8 +113,8 @@ segments:
       - [0x0D4680, asm, game/unit_001D4680]
       - [0x0D8260, asm, rw/renderware]          # RenderWare 3.6 core, world, PS2 sky2 driver ($Id strings)
       - [0x111C30, asm, game/unit_00211C30]
-      - [0x1127A0, asm, game/unit_002127A0]
-      - [0x1129A0, asm, game/unit_002129A0]
+      - [0x112580, asm, d4/fs]
+      - [0x112E30, asm, d4/ustrfmt]
       - [0x1130F0, asm, d4/ustring]
       - [0x113E10, asm, game/unit_00213E10]
       - [0x115660, asm, sce/libpad2]
@@ -126,7 +126,8 @@ segments:
       - [0x11AD60, asm, game/unit_0021AD60]
       - [0x11B000, asm, game/unit_0021B000]
       - [0x11B5E0, asm, game/unit_0021B5E0]
-      - [0x11B8C0, asm, game/unit_0021B8C0]
+      - [0x11B8C0, asm, d4/vdb]
+      - [0x11C010, asm, game/unit_0021C010]
       - [0x122300, asm, game/unit_00222300]
       - [0x122C90, asm, game/unit_00222C90]
       - [0x12B850, asm, game/unit_0022B850]
@@ -144,7 +145,8 @@ segments:
       - [0x14ABB0, asm, sce/libscf]
       - [0x14B2A0, asm, game/unit_0024B2A0]
       - [0x14D4D0, asm, game/unit_0024D4D0]
-      - [0x14FDE0, asm, game/unit_0024FDE0]
+      - [0x14FDE0, asm, d4/valuedb]
+      - [0x150160, asm, game/unit_00250160]
       - [0x1502D0, asm, game/unit_002502D0]
       - [0x1510F0, asm, game/unit_002510F0]
       - [0x152100, asm, game/unit_00252100]
@@ -193,7 +195,7 @@ segments:
       - [0x1AD8E0, asm, rwa/unit_002AD8E0]
       - [0x1ADDD0, asm, rwa/unit_002ADDD0]
       - [0x1B52D0, asm, game/unit_002B52D0]
-      - [0x1B6C40, asm, game/unit_002B6C40]
+      - [0x1B6C40, asm, d4/pool]
       - [0x1B6FF0, asm, game/unit_002B6FF0]
       - [0x1B7110, asm, game/unit_002B7110]
       - [0x1B96D0, asm, game/unit_002B96D0]
@@ -518,7 +520,7 @@ segments:
       - [0x39B080, data, game/unit_00213E10]
       - [0x39B0C0, data, sce/libpad2]
       - [0x39B0F0, data, sce/libdbc]
-      - [0x39B110, data, game/unit_0021B8C0]
+      - [0x39B110, data, d4/vdb]
       - [0x39B510, data, game/unit_00222C90]
       - [0x39B540, data, game/unit_0022D2E0]
       - [0x39B640, data, sce/libinsck]
@@ -596,7 +598,7 @@ segments:
       - [0x3B80F0, rodata, game/unit_001D45B0]
       - [0x3B8110, rodata, game/unit_001D4680]
       - [0x3B8140, rodata, rw/renderware]
-      - [0x3B96E0, rodata, game/unit_002127A0]
+      - [0x3B96E0, rodata, d4/fs]
       - [0x3B9700, rodata, d4/ustring]
       - [0x3B9850, rodata, game/unit_00213E10]
       - [0x3B98C0, rodata, sce/libpad2]
@@ -604,7 +606,8 @@ segments:
       - [0x3B9BB0, rodata, game/unit_00217850]
       - [0x3B9BC0, rodata, game/unit_0021A5F0]
       - [0x3B9C20, rodata, game/unit_0021AD60]
-      - [0x3B9C90, rodata, game/unit_0021B8C0]
+      - [0x3B9C90, rodata, d4/vdb]
+      - [0x3B9CA0, rodata, game/unit_0021C010]
       - [0x3B9DA0, rodata, game/unit_00222C90]
       - [0x3B9E10, rodata, game/unit_0022D2E0]
       - [0x3BB1D0, rodata, sce/libmrpc]
@@ -802,7 +805,187 @@ segments:
       # init, ctor and vtables share the .ctor ordering bucket so the linker keeps them in this order.
       - { start: 0x3D3E00, type: asm, name: sinit, linker_section_order: .ctor }  # .init: C++ static initializers (__sinit_*)
       - [0x3DD820, ctor, ctor]        # constructor table, null-terminated, padded to 16
-      - { start: 0x3DDAA0, type: data, name: vtables, linker_section_order: .ctor }  # .vtables: {RTTI*, 0, methods...}
+      # .vtables: {RTTI*, 0, methods...}, one slice per unit in link order (tools/dataslice.py)
+      - { start: 0x3DDAA0, type: data, name: runtime/mwrt_vt, linker_section_order: .ctor }
+      - { start: 0x3DDAC0, type: data, name: game/unit_00130C20_vt, linker_section_order: .ctor }
+      - { start: 0x3DDAF0, type: data, name: game/unit_00134260_vt, linker_section_order: .ctor }
+      - { start: 0x3DDC10, type: data, name: game/unit_00134570_vt, linker_section_order: .ctor }
+      - { start: 0x3DDD30, type: data, name: game/unit_00134930_vt, linker_section_order: .ctor }
+      - { start: 0x3DDD90, type: data, name: game/unit_0013C940_vt, linker_section_order: .ctor }
+      - { start: 0x3DDDC0, type: data, name: game/unit_0013D530_vt, linker_section_order: .ctor }
+      - { start: 0x3DDDF0, type: data, name: game/unit_0014ECB0_vt, linker_section_order: .ctor }
+      - { start: 0x3DDE80, type: data, name: game/unit_0015F270_vt, linker_section_order: .ctor }
+      - { start: 0x3DDEE0, type: data, name: game/unit_001AB120_vt, linker_section_order: .ctor }
+      - { start: 0x3DDFA0, type: data, name: game/unit_001D2EE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DDFF0, type: data, name: game/unit_00213E10_vt, linker_section_order: .ctor }
+      - { start: 0x3DE010, type: data, name: game/unit_0021B000_vt, linker_section_order: .ctor }
+      - { start: 0x3DE030, type: data, name: game/unit_00222300_vt, linker_section_order: .ctor }
+      - { start: 0x3DE060, type: data, name: game/unit_0022D2E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE0A0, type: data, name: game/unit_0023B000_vt, linker_section_order: .ctor }
+      - { start: 0x3DE0C0, type: data, name: game/unit_0024D4D0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE0F0, type: data, name: d4/valuedb_vt, linker_section_order: .ctor }
+      - { start: 0x3DE110, type: data, name: game/unit_002502D0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE130, type: data, name: game/unit_00254C90_vt, linker_section_order: .ctor }
+      - { start: 0x3DE160, type: data, name: game/unit_00285770_vt, linker_section_order: .ctor }
+      - { start: 0x3DE1D0, type: data, name: game/unit_0028B720_vt, linker_section_order: .ctor }
+      - { start: 0x3DE210, type: data, name: game/unit_002C20E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE250, type: data, name: game/unit_002E2700_vt, linker_section_order: .ctor }
+      - { start: 0x3DE270, type: data, name: game/unit_002E3350_vt, linker_section_order: .ctor }
+      - { start: 0x3DE330, type: data, name: game/unit_002FD290_vt, linker_section_order: .ctor }
+      - { start: 0x3DE350, type: data, name: game/unit_00300BE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE360, type: data, name: game/unit_00300BF0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE370, type: data, name: game/unit_0030E340_vt, linker_section_order: .ctor }
+      - { start: 0x3DE400, type: data, name: game/unit_003192F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE410, type: data, name: game/unit_0031B6A0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE420, type: data, name: game/unit_0031CC90_vt, linker_section_order: .ctor }
+      - { start: 0x3DE430, type: data, name: game/unit_0031CDA0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE440, type: data, name: game/unit_0031E1A0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE450, type: data, name: game/unit_0031FE70_vt, linker_section_order: .ctor }
+      - { start: 0x3DE460, type: data, name: game/unit_00321500_vt, linker_section_order: .ctor }
+      - { start: 0x3DE470, type: data, name: game/unit_00321870_vt, linker_section_order: .ctor }
+      - { start: 0x3DE490, type: data, name: game/unit_00322EA0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE4A0, type: data, name: game/unit_00323730_vt, linker_section_order: .ctor }
+      - { start: 0x3DE4B0, type: data, name: game/unit_00323A10_vt, linker_section_order: .ctor }
+      - { start: 0x3DE4C0, type: data, name: game/unit_003248F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE4E0, type: data, name: game/unit_00327540_vt, linker_section_order: .ctor }
+      - { start: 0x3DE500, type: data, name: game/unit_0032B200_vt, linker_section_order: .ctor }
+      - { start: 0x3DE510, type: data, name: game/unit_0032B2C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE520, type: data, name: game/unit_0032D1E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE540, type: data, name: game/unit_0032EE00_vt, linker_section_order: .ctor }
+      - { start: 0x3DE570, type: data, name: game/unit_003350F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE590, type: data, name: game/unit_003356A0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE5B0, type: data, name: game/unit_00335DE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE690, type: data, name: game/unit_0033DC20_vt, linker_section_order: .ctor }
+      - { start: 0x3DE6A0, type: data, name: game/unit_003406B0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE6B0, type: data, name: game/unit_00341D00_vt, linker_section_order: .ctor }
+      - { start: 0x3DE6E0, type: data, name: game/unit_00343720_vt, linker_section_order: .ctor }
+      - { start: 0x3DE6F0, type: data, name: game/unit_00345D00_vt, linker_section_order: .ctor }
+      - { start: 0x3DE710, type: data, name: game/unit_00346DE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE720, type: data, name: game/unit_003476B0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE750, type: data, name: game/unit_0034BEA0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE760, type: data, name: game/unit_0034CED0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE770, type: data, name: game/unit_00351A90_vt, linker_section_order: .ctor }
+      - { start: 0x3DE780, type: data, name: game/unit_00352030_vt, linker_section_order: .ctor }
+      - { start: 0x3DE790, type: data, name: game/unit_003522C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE7A0, type: data, name: game/unit_003524C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE7B0, type: data, name: game/unit_003530E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE7C0, type: data, name: game/unit_00353990_vt, linker_section_order: .ctor }
+      - { start: 0x3DE7F0, type: data, name: game/unit_00361900_vt, linker_section_order: .ctor }
+      - { start: 0x3DE800, type: data, name: game/unit_003694C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE810, type: data, name: game/unit_00369690_vt, linker_section_order: .ctor }
+      - { start: 0x3DE860, type: data, name: game/unit_003720F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE870, type: data, name: game/unit_00372600_vt, linker_section_order: .ctor }
+      - { start: 0x3DE880, type: data, name: game/unit_003736C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE8A0, type: data, name: game/unit_003744F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE8B0, type: data, name: game/unit_00374900_vt, linker_section_order: .ctor }
+      - { start: 0x3DE8D0, type: data, name: game/unit_00376330_vt, linker_section_order: .ctor }
+      - { start: 0x3DE8E0, type: data, name: game/unit_00376880_vt, linker_section_order: .ctor }
+      - { start: 0x3DE8F0, type: data, name: game/unit_00379000_vt, linker_section_order: .ctor }
+      - { start: 0x3DE900, type: data, name: game/unit_00379280_vt, linker_section_order: .ctor }
+      - { start: 0x3DE910, type: data, name: game/unit_00379990_vt, linker_section_order: .ctor }
+      - { start: 0x3DE920, type: data, name: game/unit_0037A360_vt, linker_section_order: .ctor }
+      - { start: 0x3DE930, type: data, name: game/unit_0037C570_vt, linker_section_order: .ctor }
+      - { start: 0x3DE940, type: data, name: game/unit_0037D1C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE950, type: data, name: game/unit_0037ED80_vt, linker_section_order: .ctor }
+      - { start: 0x3DE960, type: data, name: game/unit_0037FBB0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE970, type: data, name: game/unit_00382FB0_vt, linker_section_order: .ctor }
+      - { start: 0x3DE980, type: data, name: game/unit_00389C30_vt, linker_section_order: .ctor }
+      - { start: 0x3DEAA0, type: data, name: game/unit_0038A440_vt, linker_section_order: .ctor }
+      - { start: 0x3DEBB0, type: data, name: game/unit_0038AB40_vt, linker_section_order: .ctor }
+      - { start: 0x3DEBC0, type: data, name: game/unit_0038AF80_vt, linker_section_order: .ctor }
+      - { start: 0x3DECE0, type: data, name: game/unit_0038BB10_vt, linker_section_order: .ctor }
+      - { start: 0x3DEE00, type: data, name: game/unit_0038BFD0_vt, linker_section_order: .ctor }
+      - { start: 0x3DEF20, type: data, name: game/unit_0038D490_vt, linker_section_order: .ctor }
+      - { start: 0x3DF030, type: data, name: game/unit_0038E170_vt, linker_section_order: .ctor }
+      - { start: 0x3DF140, type: data, name: game/unit_0038EB50_vt, linker_section_order: .ctor }
+      - { start: 0x3DF360, type: data, name: game/unit_003938B0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF480, type: data, name: game/unit_00394280_vt, linker_section_order: .ctor }
+      - { start: 0x3DF4A0, type: data, name: game/unit_00396FE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF4D0, type: data, name: game/unit_0039B250_vt, linker_section_order: .ctor }
+      - { start: 0x3DF4E0, type: data, name: game/unit_0039C1C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF4F0, type: data, name: game/unit_0039D5C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF500, type: data, name: game/unit_003A2100_vt, linker_section_order: .ctor }
+      - { start: 0x3DF510, type: data, name: game/unit_003A21C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF530, type: data, name: game/unit_003A2820_vt, linker_section_order: .ctor }
+      - { start: 0x3DF540, type: data, name: game/unit_003A3250_vt, linker_section_order: .ctor }
+      - { start: 0x3DF560, type: data, name: game/unit_003A3D30_vt, linker_section_order: .ctor }
+      - { start: 0x3DF570, type: data, name: game/unit_003A6840_vt, linker_section_order: .ctor }
+      - { start: 0x3DF580, type: data, name: game/unit_003A74D0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF590, type: data, name: game/unit_003B6280_vt, linker_section_order: .ctor }
+      - { start: 0x3DF5A0, type: data, name: game/unit_003B8170_vt, linker_section_order: .ctor }
+      - { start: 0x3DF5C0, type: data, name: game/unit_003B89C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF5D0, type: data, name: game/unit_003B90E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF5F0, type: data, name: game/unit_003BA690_vt, linker_section_order: .ctor }
+      - { start: 0x3DF650, type: data, name: game/unit_003BC360_vt, linker_section_order: .ctor }
+      - { start: 0x3DF660, type: data, name: game/unit_003BE630_vt, linker_section_order: .ctor }
+      - { start: 0x3DF780, type: data, name: game/unit_003BE670_vt, linker_section_order: .ctor }
+      - { start: 0x3DF8A0, type: data, name: game/unit_003BFEE0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF8C0, type: data, name: game/unit_003C23A0_vt, linker_section_order: .ctor }
+      - { start: 0x3DF8E0, type: data, name: game/unit_003C2960_vt, linker_section_order: .ctor }
+      - { start: 0x3DF910, type: data, name: game/unit_003C3030_vt, linker_section_order: .ctor }
+      - { start: 0x3DFA30, type: data, name: game/unit_003C35C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFAE0, type: data, name: game/unit_003C9210_vt, linker_section_order: .ctor }
+      - { start: 0x3DFB00, type: data, name: game/unit_003C9A60_vt, linker_section_order: .ctor }
+      - { start: 0x3DFB60, type: data, name: game/unit_003CD5E0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFB80, type: data, name: game/unit_003CDB10_vt, linker_section_order: .ctor }
+      - { start: 0x3DFCA0, type: data, name: game/unit_003D27C0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFCB0, type: data, name: game/unit_003D27F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFCD0, type: data, name: game/unit_003D5510_vt, linker_section_order: .ctor }
+      - { start: 0x3DFCF0, type: data, name: game/unit_003D6C30_vt, linker_section_order: .ctor }
+      - { start: 0x3DFD10, type: data, name: game/unit_003D7B40_vt, linker_section_order: .ctor }
+      - { start: 0x3DFD30, type: data, name: game/unit_003D8920_vt, linker_section_order: .ctor }
+      - { start: 0x3DFDE0, type: data, name: game/unit_003EB0F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFEC0, type: data, name: game/unit_003F3AF0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFED0, type: data, name: game/unit_003F4A80_vt, linker_section_order: .ctor }
+      - { start: 0x3DFEE0, type: data, name: game/unit_003F5E40_vt, linker_section_order: .ctor }
+      - { start: 0x3DFEF0, type: data, name: game/unit_003F67F0_vt, linker_section_order: .ctor }
+      - { start: 0x3DFF90, type: data, name: game/unit_0041C900_vt, linker_section_order: .ctor }
+      - { start: 0x3DFFA0, type: data, name: game/unit_0041D3E0_vt, linker_section_order: .ctor }
+      - { start: 0x3E00C0, type: data, name: game/unit_0042C2A0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0150, type: data, name: game/unit_004356A0_vt, linker_section_order: .ctor }
+      - { start: 0x3E01F0, type: data, name: game/unit_00437DC0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0200, type: data, name: game/unit_004381A0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0210, type: data, name: game/unit_00438830_vt, linker_section_order: .ctor }
+      - { start: 0x3E0220, type: data, name: game/unit_00438910_vt, linker_section_order: .ctor }
+      - { start: 0x3E0230, type: data, name: game/unit_00438C40_vt, linker_section_order: .ctor }
+      - { start: 0x3E0240, type: data, name: game/unit_00438CF0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0250, type: data, name: game/unit_00439CF0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0260, type: data, name: game/unit_00439DD0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0270, type: data, name: game/unit_0043A040_vt, linker_section_order: .ctor }
+      - { start: 0x3E0280, type: data, name: game/unit_0043B770_vt, linker_section_order: .ctor }
+      - { start: 0x3E02A0, type: data, name: game/unit_0043C460_vt, linker_section_order: .ctor }
+      - { start: 0x3E02B0, type: data, name: game/unit_0043C5B0_vt, linker_section_order: .ctor }
+      - { start: 0x3E02C0, type: data, name: game/unit_0043DA70_vt, linker_section_order: .ctor }
+      - { start: 0x3E02D0, type: data, name: game/unit_0043E000_vt, linker_section_order: .ctor }
+      - { start: 0x3E02E0, type: data, name: game/unit_0043EE40_vt, linker_section_order: .ctor }
+      - { start: 0x3E02F0, type: data, name: game/unit_0043EFA0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0310, type: data, name: game/unit_0043F670_vt, linker_section_order: .ctor }
+      - { start: 0x3E0320, type: data, name: game/unit_0043FB60_vt, linker_section_order: .ctor }
+      - { start: 0x3E0330, type: data, name: game/unit_0043FD60_vt, linker_section_order: .ctor }
+      - { start: 0x3E0340, type: data, name: game/unit_0043FFB0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0350, type: data, name: game/unit_00440490_vt, linker_section_order: .ctor }
+      - { start: 0x3E03F0, type: data, name: game/unit_00441590_vt, linker_section_order: .ctor }
+      - { start: 0x3E0400, type: data, name: game/unit_00441D70_vt, linker_section_order: .ctor }
+      - { start: 0x3E0410, type: data, name: game/unit_00442C90_vt, linker_section_order: .ctor }
+      - { start: 0x3E0430, type: data, name: game/unit_00445300_vt, linker_section_order: .ctor }
+      - { start: 0x3E0440, type: data, name: game/unit_00445530_vt, linker_section_order: .ctor }
+      - { start: 0x3E0470, type: data, name: game/unit_00445CD0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0490, type: data, name: game/unit_004474F0_vt, linker_section_order: .ctor }
+      - { start: 0x3E04A0, type: data, name: game/unit_004480E0_vt, linker_section_order: .ctor }
+      - { start: 0x3E04B0, type: data, name: game/unit_0044A1D0_vt, linker_section_order: .ctor }
+      - { start: 0x3E04C0, type: data, name: game/unit_0044A430_vt, linker_section_order: .ctor }
+      - { start: 0x3E04F0, type: data, name: game/unit_00453E90_vt, linker_section_order: .ctor }
+      - { start: 0x3E0500, type: data, name: game/unit_00454120_vt, linker_section_order: .ctor }
+      - { start: 0x3E0550, type: data, name: game/unit_004566E0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0560, type: data, name: game/unit_00456900_vt, linker_section_order: .ctor }
+      - { start: 0x3E0580, type: data, name: game/unit_00459910_vt, linker_section_order: .ctor }
+      - { start: 0x3E0590, type: data, name: game/unit_0045B910_vt, linker_section_order: .ctor }
+      - { start: 0x3E05A0, type: data, name: game/unit_0045BB10_vt, linker_section_order: .ctor }
+      - { start: 0x3E05C0, type: data, name: game/unit_0045C890_vt, linker_section_order: .ctor }
+      - { start: 0x3E05D0, type: data, name: game/unit_0045FB10_vt, linker_section_order: .ctor }
+      - { start: 0x3E05E0, type: data, name: game/unit_004614B0_vt, linker_section_order: .ctor }
+      - { start: 0x3E05F0, type: data, name: game/unit_00469AB0_vt, linker_section_order: .ctor }
+      - { start: 0x3E0610, type: data, name: vtables_end, linker_section_order: .ctor }
       # Small data, addressed through $gp (_gp - 0x7FF0 = 0x4E0680). It starts with .lit4, the pool of float
       # literals that the linker builds from every file's R_MIPS_LITERAL constants and orders by first use, not
       # link order, so it stays one piece (padded to 0x80). .sdata, .sbss and .bss follow link order and are cut
@@ -886,10 +1069,11 @@ segments:
       - { type: sbss, vram: 0x004E2730, name: game/unit_001D2EE0 }
       - { type: sbss, vram: 0x004E273C, name: game/unit_001D3A50 }
       - { type: sbss, vram: 0x004E2754, name: rw/renderware }
-      - { type: sbss, vram: 0x004E28C4, name: game/unit_002129A0 }
+      - { type: sbss, vram: 0x004E28C4, name: d4/fs }
       - { type: sbss, vram: 0x004E28D8, name: game/unit_00217850 }
       - { type: sbss, vram: 0x004E2910, name: game/unit_0021B5E0 }
-      - { type: sbss, vram: 0x004E291C, name: game/unit_0021B8C0 }
+      - { type: sbss, vram: 0x004E291C, name: d4/vdb }
+      - { type: sbss, vram: 0x004E2928, name: game/unit_0021C010 }
       - { type: sbss, vram: 0x004E293C, name: game/unit_00222300 }
       - { type: sbss, vram: 0x004E2944, name: game/unit_00222C90 }
       - { type: sbss, vram: 0x004E2950, name: game/unit_0022D2E0 }
@@ -975,11 +1159,11 @@ segments:
       - { type: bss, vram: 0x0066E100, name: game/unit_001D3A50 }
       - { type: bss, vram: 0x0066EB20, name: game/unit_001D4680 }
       - { type: bss, vram: 0x00670AE0, name: rw/renderware }
-      - { type: bss, vram: 0x00676440, name: game/unit_002129A0 }
+      - { type: bss, vram: 0x00676440, name: d4/fs }
       - { type: bss, vram: 0x00676480, name: sce/libpad2 }
       - { type: bss, vram: 0x006797C8, name: sce/libdbc }
       - { type: bss, vram: 0x0067CD90, name: game/unit_00217850 }
-      - { type: bss, vram: 0x0067CFD0, name: game/unit_0021B8C0 }
+      - { type: bss, vram: 0x0067CFD0, name: game/unit_0021C010 }
       - { type: bss, vram: 0x0067D880, name: game/unit_00222300 }
       - { type: bss, vram: 0x01D6E280, name: game/unit_00222C90 }
       - { type: bss, vram: 0x01D6EDD0, name: game/unit_0022D2E0 }

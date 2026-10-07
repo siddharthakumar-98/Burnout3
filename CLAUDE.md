@@ -44,10 +44,12 @@ tools/dock python3 tools/funcmatch.py <func> c_cpp/src/<unit>.c [-c compilers/<v
 4. `progress.py`, `ghidra_sync.py push`, update `docs/d4.md` (and README/ROADMAP counts if they changed).
 
 ## Compiler notes
-- CodeWarrior PS2 (`MW MIPS C Compiler 2.4.1.01`), built with decomp.me `3.0.3-020716`,
-  `-O4 -str readonly -Cpp_exceptions off`; runs under wibo. Other builds sit beside it in `compilers/`.
-- Open lead: 3.0.1 b119 (2004-09-14) matches `ustrFromUtf8` at 99.8% vs 70.9% on 3.0.3. Test all matched functions
-  under b119/b103/b145 before writing more C (see `docs/compiler.md`, "A later build?").
+- CodeWarrior PS2, decomp.me `3.0.1b119-040914` (settled in D4 by a sweep of all 19 `3.0.x` builds; the ELF's
+  `2.4.1.01` stamp comes from a library object), `-O4 -str readonly -Cpp_exceptions off`; runs under wibo. Other
+  builds sit beside it in `compilers/`. Don't switch compilers to chase one function (`docs/compiler.md`).
+- Matching agents: `.claude/agents/decomp-matcher.md` (one unit per agent; agents edit only their C file and header,
+  never run `configure.py`, and only read Ghidra). Units can run in parallel: `funcmatch.py` work files are named per
+  function and source file.
 - No system headers: declare libc prototypes yourself. Fixed-size types in `c_cpp/include/types.h`; wide chars are
   `u16`. C headers used from C++ need `extern "C"`.
 - Float literals stay in the shared `.lit4` pool; the build repoints them (`litfix.py`), nothing to do in C.
@@ -59,6 +61,15 @@ v7.0.0 (bethington fork of LaurieWired's). Keep Strict Naming Enforcement off (o
 carry `unit:<path>` tags from `push`. Known: 0x1FFFD8 is still typed as data; functions at 0x4843D0–0x4854E8 are
 libkernl kernel patches in `.data` (expected).
 
+## Plugins
+- **superpowers**: new milestones or tooling go brainstorming → spec → writing-plans → execution; small fixes skip
+  the spec. Specs and plans live in `docs/superpowers/{specs,plans}/`. This file wins on conflicts: skills that commit
+  their own docs don't here (commit only when asked, with the user's message).
+- **claude-mem**: cross-session recall. Search it (`mem-search`) before re-deriving earlier findings (compiler
+  experiments, unit evidence). It is recall, not the record: findings still go in `docs/` and `ROADMAP.md`. Keep its
+  cloud sync off for this repo; its observations can hold disassembly and game strings.
+
 ## Related
-MC3DER (sister decomp, waits for the MC3 ISO) and GameMerge (`~/Desktop/GameMerge`, consumes this repo's symbols and
+MC3DER (`~/Desktop/MC3DER`, https://github.com/siddharthakumar-98/MC3DER: sister decomp, starts from a copy of this
+repo's tooling; port tool improvements there) and GameMerge (`~/Desktop/GameMerge`, consumes this repo's symbols and
 the Rust core). This repo never depends on them.

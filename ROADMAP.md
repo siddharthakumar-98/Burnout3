@@ -32,7 +32,7 @@ This repo is one of three. Dependencies point one way: this repo never depends o
 
 | Repo | Relationship |
 |---|---|
-| MC3DER (planned) | Sister project: the same decomp and Rust rewrite for Midnight Club 3: DUB Edition Remix, once its ISO is dumped. It will start from a copy of this repo's tooling. |
+| [MC3DER](https://github.com/siddharthakumar-98/MC3DER) | Sister project: the same decomp and Rust rewrite for Midnight Club 3: DUB Edition Remix (D0 in progress). It starts from a copy of this repo's tooling; when a tool improves here, the change is ported there. `ee` and `platform` are expected to be shared with it. |
 | [GameMerge](https://github.com/siddharthakumar-98/GameMerge) | Consumes this repo: symbols and headers (Track A), and the Rust `burnout3-core` crate at tagged releases (Track B). |
 
 This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (commits up to `b5044e0`) stays in

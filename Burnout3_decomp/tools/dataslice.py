@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assign .data, .rodata, .sdata, .sbss and .bss to the .text units, giving every unit its own data slices.
+"""Assign .data, .rodata, .sdata, .sbss, .bss and .vtables to the .text units, giving every unit its own data slices.
 
 Run after configure.py has generated assembly/asm/ (plain Python 3, no container needed):
 
@@ -15,6 +15,12 @@ item no code references goes with the next unit when it starts on an 8-byte boun
 last referenced item, since every unit's data starts aligned; otherwise it stays with the previous unit. Data
 slices that b3.yaml already carves for C units (d2/, d3/, d4/) are kept exactly, and FORCED_CUTS (slice starts set by
 hand) override the model.
+
+.vtables (CodeWarrior's section for C++ vtables, `{RTTI*, 0, methods...}`) is in link order too. A vtable goes to
+the unit that defines its own methods, the ones no other vtable lists (inherited ones belong to base classes elsewhere);
+code that installs a vtable (constructors, destructors) counts as well. Its slices are named `<unit>_vt` and keep
+the `.ctor` ordering bucket in b3.yaml. The word at 0x4E0610 (a pointer to `_start`, then padding to `.lit4`) is not a
+vtable and stays a piece of its own, `vtables_end`.
 
 Two pieces are not sliced: .lit4, the float literal pool the linker builds across all files (it fills the start
 of the small-data area and is not in link order), and the COMMON block at the end of .bss (uninitialized globals
@@ -39,7 +45,9 @@ STREAMS = {
     "sdata": (0x4E1400, 0x4E2680, 4),
     "sbss": (0x4E2680, 0x4E3000, 1),
     "bss": (0x4E3000, 0x1ECE340, 1),
+    "vtables": (0x4DDAA0, 0x4E0610, 16),
 }
+VTABLES_END = 0x4E0610  # pointer to _start and padding, after the last vtable
 LIT4 = 0x4E0680    # .lit4: linker-pooled float literals, 0x4E0680-0x4E1400 (padded to 0x80)
 COMMON = 0x1ECE340  # COMMON symbols of the ee-gcc libraries, to the end of .bss
 NOLOAD = ("sbss", "bss")
@@ -54,6 +62,8 @@ FORCED_CUTS: dict[tuple[str, int], tuple[str, str]] = {
                          "only named by other units' code, which would hand everything after the arena to them"),
 }
 SUBSEG = re.compile(r"\s*- \[0x([0-9A-F]+), (\w+), (\S+)\]")
+NOLOAD_SUBSEG = re.compile(r"\s*- \{ type: (sbss|bss), vram: 0x([0-9A-F]+), name: (\S+) \}")
+VT_SUBSEG = re.compile(r"\s*- \{ start: 0x([0-9A-F]+), type: (data), name: (\S+_vt),")
 
 
 def text_units() -> list[tuple[int, str]]:
@@ -68,13 +78,20 @@ def text_units() -> list[tuple[int, str]]:
 
 def fixed_slices() -> dict[str, list[tuple[int, int, str]]]:
     """Data slices of C units already carved in b3.yaml: stream -> [(start, end, name)]."""
-    lines = [m for m in map(SUBSEG.match, YAML.read_text().splitlines()) if m]
+    text = YAML.read_text().splitlines()
+    # (VRAM, type, name) of every subsegment; .sbss/.bss lines give a VRAM, the others a file offset
+    lines = [(int(m.group(1), 16) + xref.BASE, m.group(2), m.group(3))
+             for m in map(SUBSEG.match, text) if m]
+    lines += [(int(m.group(1), 16) + xref.BASE, m.group(2), m.group(3)) for m in map(VT_SUBSEG.match, text) if m]
+    lines += [(int(m.group(2), 16), m.group(1), m.group(3)) for m in map(NOLOAD_SUBSEG.match, text) if m]
+    lines.sort()
     out = {s: [] for s in STREAMS}
-    for k, m in enumerate(lines):
-        if m.group(2) in STREAMS and m.group(3).startswith(CARVED):
-            start = int(m.group(1), 16) + xref.BASE
-            end = int(lines[k + 1].group(1), 16) + xref.BASE
-            out[m.group(2)].append((start, end, m.group(3)))
+    vt_lo, vt_hi, _ = STREAMS["vtables"]
+    for k, (start, kind, name) in enumerate(lines):
+        stream = "vtables" if kind == "data" and vt_lo <= start < vt_hi else kind
+        if stream in STREAMS and name.startswith(CARVED):
+            end = lines[k + 1][0] if k + 1 < len(lines) else STREAMS[stream][1]
+            out[stream].append((start, end, name.removesuffix("_vt")))
     return out
 
 
@@ -148,12 +165,30 @@ def references(stream: str, units, funcs) -> tuple[list[int], dict[int, set[int]
                 if lo <= a < hi:
                     users.setdefault(a, set()).add(unit_of(f.addr))
     items = labels(lo, hi)
+    if stream == "vtables":
+        add_vtable_methods(items, users, unit_of)
     # a reference into the middle of an item counts for the item
     for a in list(users):
         if a not in items:
             k = bisect.bisect_right(items, a) - 1
             users.setdefault(items[k], set()).update(users.pop(a))
     return items, users, owners
+
+
+def add_vtable_methods(items: list[int], users: dict[int, set[int]], unit_of) -> None:
+    """Count each vtable's own methods (listed in no other vtable) as uses by the units defining them."""
+    rom = (ROOT / xref.ROM).read_bytes()
+    bounds = items + [STREAMS["vtables"][1]]
+    words = {}
+    for a, b in zip(bounds, bounds[1:]):
+        words[a] = [int.from_bytes(rom[x - xref.BASE:x - xref.BASE + 4], "little") for x in range(a + 8, b, 4)]
+    count: dict[int, int] = {}
+    for ws in words.values():
+        for w in ws:
+            count[w] = count.get(w, 0) + 1
+    for a, ws in words.items():
+        own = [w for w in ws if 0x100270 <= w < 0x469E00 and count[w] == 1]
+        users.setdefault(a, set()).update(unit_of(w) for w in own)
 
 
 def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, str]]:
@@ -245,6 +280,9 @@ def own_share(stream: str, sl: list[tuple[int, str]], units, funcs) -> tuple[int
 
 
 def yaml_line(stream: str, start: int, name: str) -> str:
+    if stream == "vtables":
+        name = name if name == "vtables_end" else f"{name}_vt"
+        return f"      - {{ start: 0x{start - xref.BASE:06X}, type: data, name: {name}, linker_section_order: .ctor }}"
     if stream in NOLOAD:
         return f"      - {{ type: {stream}, vram: 0x{start:08X}, name: {name} }}"
     return f"      - [0x{start - xref.BASE:06X}, {stream}, {name}]"
@@ -259,11 +297,17 @@ def main() -> None:
     result = {s: slices(s, units, funcs) for s in STREAMS}
     if args.yaml:
         for stream, sl in result.items():
+            if stream == "vtables":
+                continue
             if stream == "sdata":
                 print(yaml_line("sdata", LIT4, "lit4"))
             for start, name in sl:
                 print(yaml_line(stream, start, name))
         print(yaml_line("bss", COMMON, "common"))
+        print("# .vtables: these lines replace the vtables block after the ctor line")
+        for start, name in result["vtables"]:
+            print(yaml_line("vtables", start, name))
+        print(yaml_line("vtables", VTABLES_END, "vtables_end"))
         return
     for stream, sl in result.items():
         names = [n for _, n in sl]

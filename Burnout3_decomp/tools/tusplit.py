@@ -59,12 +59,22 @@ FORCED_CUTS: dict[int, str] = {
               "buffer with 0x130BF0 and a const vector at .rodata 0x4B42C0, after main's strings",
     0x130C20: "the class whose vtable at 0x4DDAC0 lists 0x130C40 and 0x131100-0x131990 (movie names, Data/*.bin "
               "loading); 0x130C20/0x130C30 set fields of the same object",
+    0x13CE20: "load queue (ring of 24 0x50-byte requests at +0x780..+0x790 of its object: cancel 0x13CE20, queue "
+              "0x13CFA0, service 0x13D250, close 0x13D410, init 0x13D4D0); the code before it is a game-mode class "
+              "(vtable 0x4DDD90) built on unit_00134570",
     0x1D2EE0: "IOP 'dvd:' device for the file system (vtables 0x4DDFA0/0x4DDFC0; init 0x1D3850 registers it through "
               "0x2129A0 and installs the DMA handlers 0x1D2EE0/0x1D2F50); only an extern global (0x4E2730) links it on",
     0x1D3A50: "boot/system code: 0x1D3A60-0x1D3D30 on .sbss 0x4E273C-0x4E2744, the ELF launcher 0x1D3D70 (language=%d) "
               "sharing 'dev9x:' with 0x1D4020, and the IOP module loader 0x1D41E0",
     0x217610: "base-class methods (virtual forwarding through +0x4, interface lookup 0x217690) shared by the vtables "
               "0x4DE2B0, 0x4DE380, 0x4DFF20, 0x4DFFE0 of unrelated classes; not the pad code before it",
+    0x212580: "file system: 0x212580-0x212790 are the RenderWare file-interface replacements (fopen 0x2127A0, read, "
+              "seek...) that 0x212CB0 installs over RwOsGetFileInterface's table; reached only through that table",
+    0x212E30: "end of the file system; 0x212E30/0x213050 substitute %1-%9 in UTF-16 strings and share nothing with it",
+    0x21C010: "end of the tuning-variable registry (0x21B8C0-0x21C010: register, unregister, the key hash 0x21BFA0); "
+              "0x21C010 and 0x21C120 call race code (0x26A1C0-0x26BAA0) and use none of its data",
+    0x250160: "end of the ValueDB class (vtable 0x4DE0F0, methods 0x24FDE0-0x250160); 0x250160 is VU0 code on another "
+              "object, called only from 0x1ADA00",
     0x222300: "memory manager: 0x222300-0x222650 are exactly the methods in vtable 0x4DE030, which __sinit #18 "
               "installs in the global heap object 0x1D6D880; the RenderWare hooks before it belong to the class at "
               "0x221420",
@@ -83,6 +93,10 @@ MERGES: dict[int, str] = {
     0x217010: "pad class, as 0x216FF0",
     0x217060: "pad class, as 0x216FF0",
     0x217070: "pad class, as 0x216FF0 (vibration through libdbc's sceDbcSendData2)",
+    0x2127A0: "file system: fopen 0x2127A0 parses the mode and opens through the device found by 0x212BD0, which "
+              "searches the device table (.sbss 0x4E28C4/0x4E28D0) that 0x2129A0 fills",
+    0x2129A0: "file system, as 0x2127A0: device registration and lookup on the same .sbss table; 0x212CB0 installs "
+              "0x212580-0x2127A0 as RenderWare's file interface",
     0x22BEE0: "same controller object and helper 0x22C610 as 0x22B850-0x22BEE0",
     0x2B52C0: "RenderWare Audio callback that clears .sbss 0x4E2CF4; 0x2B51F0 just before takes its address and uses "
               "the same variable, so it is a static function of that file",
@@ -127,14 +141,21 @@ def float_literals() -> set[int]:
 
 def vtables() -> list[list[int]]:
     """Function entries of each vtable, in address (= link) order."""
-    out = []
-    for line in (ROOT / "assembly/asm/data/vtables.data.s").read_text().splitlines():
-        if line.startswith("dlabel "):
-            out.append([])
-        m = re.search(r"\.word func_([0-9A-F]{8})", line)
-        if m and out:
-            out[-1].append(int(m.group(1), 16))
-    return out
+    tables: dict[int, list[int]] = {}
+    data = ROOT / "assembly/asm/data"
+    # one file before .vtables was sliced per unit, then <unit>_vt.data.s files (tools/dataslice.py)
+    for path in [data / "vtables.data.s", *data.rglob("*_vt.data.s")]:
+        if not path.exists():
+            continue
+        cur = None
+        for line in path.read_text().splitlines():
+            m = re.match(r"dlabel D_([0-9A-F]{8})", line)
+            if m:
+                cur = tables.setdefault(int(m.group(1), 16), [])
+            m = re.search(r"\.word func_([0-9A-F]{8})", line)
+            if m and cur is not None:
+                cur.append(int(m.group(1), 16))
+    return [tables[a] for a in sorted(tables)]
 
 
 class Model:
