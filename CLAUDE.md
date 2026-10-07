@@ -60,5 +60,6 @@ carry `unit:<path>` tags from `push`. Known: 0x1FFFD8 is still typed as data; fu
 libkernl kernel patches in `.data` (expected).
 
 ## Related
-MC3DER (sister decomp, waits for the MC3 ISO) and GameMerge (`~/Desktop/GameMerge`, consumes this repo's symbols and
+MC3DER (`~/Desktop/MC3DER`, https://github.com/siddharthakumar-98/MC3DER: sister decomp, starts from a copy of this
+repo's tooling; port tool improvements there) and GameMerge (`~/Desktop/GameMerge`, consumes this repo's symbols and
 the Rust core). This repo never depends on them.
