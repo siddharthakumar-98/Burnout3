@@ -62,8 +62,7 @@ u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
     }
     minDigits = 0;
     group = 0;
-    k = 0;
-    for (i = 0; i < 12; i++) {
+    for (i = 0, k = 0; i < 12; i++, k++) {
         u32 q = n / 10;
         buf[k] = n - q * 10 + '0';
         if (q == 0) {
@@ -77,7 +76,6 @@ u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
             buf[k] = thousandsSep[0];
         }
         n = q;
-        k++;
     }
     while (i < minDigits) {
         minDigits--;
@@ -93,8 +91,7 @@ u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
     if (decimals != 0) {
         *out++ = point;
         n = (int)((value - (float)whole) * powersOf10[decimals]);
-        k = 0;
-        for (i = 0; i < 12; i++) {
+        for (i = 0, k = 0; i < 12; i++, k++) {
             u32 q = n / 10;
             frac[k] = n - q * 10 + '0';
             if (q == 0) {
@@ -103,7 +100,6 @@ u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
                 break;
             }
             n = q;
-            k++;
         }
         while (i < decimals) {
             decimals--;
@@ -145,8 +141,7 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
     }
     minDigits = 0;
     group = 0;
-    k = 0;
-    for (i = 0; i < 12; i++) {
+    for (i = 0, k = 0; i < 12; i++, k++) {
         u32 q = n / 10;
         buf[k] = n - q * 10 + '0';
         if (q == 0) {
@@ -160,7 +155,6 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
             buf[k] = thousandsSep[0];
         }
         n = q;
-        k++;
     }
     while (i < minDigits) {
         minDigits--;
@@ -176,8 +170,7 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
     if (decimals != 0) {
         *out++ = point;
         n = (int)((value - (float)whole) * powersOf10[decimals]);
-        k = 0;
-        for (i = 0; i < 12; i++) {
+        for (i = 0, k = 0; i < 12; i++, k++) {
             u32 q = n / 10;
             frac[k] = n - q * 10 + '0';
             if (q == 0) {
@@ -186,7 +179,6 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
                 break;
             }
             n = q;
-            k++;
         }
         while (i < decimals) {
             decimals--;
@@ -204,7 +196,7 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
 u16 *ustrFromInt(u16 *out, int value, int minDigits, int plus)
 {
     u16 buf[16];
-    u32 n;
+    u32 n, q;
     int i, k, group;
 
     if (value < 0) {
@@ -215,9 +207,8 @@ u16 *ustrFromInt(u16 *out, int value, int minDigits, int plus)
     }
     n = value;
     group = 0;
-    k = 0;
-    for (i = 0; i < 12; i++) {
-        u32 q = n / 10;
+    for (i = 0, k = 0; i < 12; i++, k++) {
+        q = n / 10;
         buf[k] = n - q * 10 + '0';
         if (q == 0) {
             i++;
@@ -230,7 +221,6 @@ u16 *ustrFromInt(u16 *out, int value, int minDigits, int plus)
             buf[k] = thousandsSep[0];
         }
         n = q;
-        k++;
     }
     while (i < minDigits) {
         minDigits--;
@@ -257,8 +247,7 @@ u16 *ustrFromIntNoSep(u16 *out, int value, int minDigits, int plus)
         *out++ = plusSign[0];
     }
     n = value;
-    k = 0;
-    for (i = 0; i < 12; i++) {
+    for (i = 0, k = 0; i < 12; i++, k++) {
         u32 q = n / 10;
         buf[k] = n - q * 10 + '0';
         if (q == 0) {
@@ -267,7 +256,6 @@ u16 *ustrFromIntNoSep(u16 *out, int value, int minDigits, int plus)
             break;
         }
         n = q;
-        k++;
     }
     while (i < minDigits) {
         minDigits--;
@@ -286,8 +274,7 @@ u16 *ustrFromUInt(u16 *out, u32 n, int minDigits)
     u16 buf[16];
     int i, k;
 
-    k = 0;
-    for (i = 0; i < 12; i++) {
+    for (i = 0, k = 0; i < 12; i++, k++) {
         u32 q = n / 10;
         buf[k] = n - q * 10 + '0';
         if (q == 0) {
@@ -296,7 +283,6 @@ u16 *ustrFromUInt(u16 *out, u32 n, int minDigits)
             break;
         }
         n = q;
-        k++;
     }
     while (i < minDigits) {
         minDigits--;
@@ -386,14 +372,14 @@ int ustrlen(const u16 *s)
     return n;
 }
 
-int ustrFromUtf8Checked(const char *src, u16 *dst, int size)
+int ustrFromUtf8Checked(const u8 *src, u16 *dst, int size)
 {
     int result = 0;
-    const char *end = src + strlen(src);
+    const u8 *end = src + strlen((const char *)src);
 
     while (*src != 0) {
         u32 ch = 0;
-        u8 extra = trailingBytesForUTF8[(u8)*src];
+        u8 extra = trailingBytesForUTF8[*src];
 
         if (src + extra >= end) {
             result = 1;
@@ -401,55 +387,56 @@ int ustrFromUtf8Checked(const char *src, u16 *dst, int size)
         }
         switch (extra) {
         case 3:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 2:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 1:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 0:
-            ch += (u8)*src++;
+            ch += *src++;
         }
         ch -= offsetsFromUTF8[extra];
-        if (size < 2) {
+        if (size <= 1) {
             result = 2;
             break;
         }
-        if (ch > 0xFFFF) {
+        if (ch <= 0xFFFF) {
+            if (ch >= 0xD800 && ch <= 0xDFFF) {
+                result = 3;
+                break;
+            }
+            *dst++ = ch;
+            size--;
+        } else {
             result = 3;
             break;
         }
-        if (ch >= 0xD800 && ch <= 0xDFFF) {
-            result = 3;
-            break;
-        }
-        *dst++ = ch;
-        size--;
     }
     *dst = 0;
     return result;
 }
 
-void ustrFromUtf8(const char *src, u16 *dst, int size)
+void ustrFromUtf8(const u8 *src, u16 *dst, int size)
 {
-    while (*src != 0 && size >= 2) {
+    while (*src != 0 && size > 1) {
         u32 ch = 0;
-        u8 extra = trailingBytesForUTF8[(u8)*src];
+        u8 extra = trailingBytesForUTF8[*src];
 
         switch (extra) {
         case 3:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 2:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 1:
-            ch += (u8)*src++;
+            ch += *src++;
             ch <<= 6;
         case 0:
-            ch += (u8)*src++;
+            ch += *src++;
         }
         size--;
         *dst++ = ch - offsetsFromUTF8[extra];
@@ -459,7 +446,7 @@ void ustrFromUtf8(const char *src, u16 *dst, int size)
 
 void ustrToUtf8(const u16 *src, char *dst, int size)
 {
-    while (*src != 0 && size >= 2) {
+    while (*src != 0 && size > 1) {
         u32 ch = *src++;
         u8 bytes = 0;
 

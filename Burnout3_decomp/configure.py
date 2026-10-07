@@ -32,11 +32,11 @@ BUILD = Path("build")
 CROSS = "mips-linux-gnu-"
 AS_FLAGS = "-EL -march=r5900 -mabi=eabi -G 0 -no-pad-sections -I assembly/include"
 
-# CodeWarrior for PS2 Version 3.0.3 (decomp.me mwcps2-3.0.3-020716). Four builds stamp the game's
-# "MW MIPS C Compiler (2.4.1.01)" (2.4 EB0017, 3.0, 3.0.1, 3.0.3); 3.0.3 is the only one that
-# matches every D2 test, including the inline cvt.w.s float-to-int. See docs/compiler.md.
-MWCC = Path("compilers/3.0.3-020716/mwccps2.exe")
-# -O3 and -O4 produce identical code for every function tested so far; -O4 is the working choice.
+# CodeWarrior for PS2 3.0.1 build 119 (decomp.me mwcps2-3.0.1b119-040914, 2004-09-14). Of the 19 3.0.x
+# builds on decomp.me it is the best or equal best on every function decompiled so far, and the only one that
+# matches func_0013AE70; 3.0.3, the D2 choice, misses it and the D4 loops. See docs/compiler.md.
+MWCC = Path("compilers/3.0.1b119-040914/mwccps2.exe")
+# -O4: ustrToUtf8 is the first function where -O3 differs (76.8% vs 99.9%); -O4,s is identical to -O4.
 # -str readonly: the game's string literals sit in .rodata and are addressed with lui/addiu even when
 #   short (the default puts them in .data, and short ones in .sdata via $gp).
 # -Cpp_exceptions off: the binary has no .exceptix exception tables.
@@ -50,9 +50,9 @@ CFLAGS = "-O4 -str readonly -Cpp_exceptions off"
 #           Float literals need no entry: they stay in the shared .lit4 pool (tools/litfix.py).
 C_UNITS = {
     "d2/func_00131AA0": {"linked": True},
-    "d2/func_00131CE0": {"linked": False},  # 98.75%: original computes a large offset in v0, not at
+    "d2/func_00131CE0": {"linked": True},
     "d2/func_00136E00": {"linked": True},
-    "d2/func_0013AE70": {"linked": False},  # 90.38%: branch delay slot filled differently
+    "d2/func_0013AE70": {"linked": True},
     "d2/func_0013B670": {"linked": False},  # original uses inline asm (pmaxw/pminw); C is a draft
     "d2/func_0013B740": {"linked": True},
     "d2/func_0013C910": {"linked": True},
@@ -64,6 +64,11 @@ C_UNITS = {
     "d3/func_002527F0": {"linked": True},
     "d3/func_003EA7E0": {"linked": True},
     # D4: whole game units, with their data slices
+    "d4/fs": {"linked": True},  # its data (mode strings, device table) stays in assembly for now
+    "d4/pool": {"linked": True},
+    "d4/valuedb": {"linked": True, "data": {"data/d4/valuedb_vt.data": ".data"}},  # its vtable
+    "d4/vdb": {"linked": True},  # its data (CRC table, .sbss words) stays in assembly for now
+    "d4/ustrfmt": {"linked": True},
     "d4/ustring": {"linked": False},  # D4.3 step 2 in progress: 6 of 14 functions at 100% (docs/d4.md)
 }
 

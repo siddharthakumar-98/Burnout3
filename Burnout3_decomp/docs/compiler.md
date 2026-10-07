@@ -1,9 +1,10 @@
-# Compiler identification (D2)
+# Compiler identification (D2, revised in D4)
 
-**Result:** Metrowerks CodeWarrior for PS2 **Version 3.0.3** (decomp.me `mwcps2-3.0.3-020716`) with
-**`-O4 -str readonly -Cpp_exceptions off`**. With these flags, 10 functions in 8 translation units compile to the
-original bytes and link into a build with the original SHA-1. The two extra flags came from D3 and are
-[explained below](#flags-found-while-mapping-the-binary-d3).
+**Result:** Metrowerks CodeWarrior for PS2 **3.0.1 build 119** (decomp.me `mwcps2-3.0.1b119-040914`, dated
+2004-09-14) with **`-O4 -str readonly -Cpp_exceptions off`**. D2 chose 3.0.3 from the version stamp and the first
+ten test functions; D4's loops showed the 2003-2005 builds come closer, and a sweep of every function in C under all
+19 `3.0.x` builds ([below](#build-119-d4)) puts build 119 first or equal first on every one. Both D2 near-misses
+match with it. The two extra flags came from D3 and are [explained below](#flags-found-while-mapping-the-binary-d3).
 
 ## The version stamp narrows it to four builds
 
@@ -43,18 +44,18 @@ four flag sets gave the same result for every function, so the table shows one v
   uses `daddu` and `sd`/`ld`. `#pragma processor VR5000` fixes the moves but not the saves.
 - **3.0 and 3.0.1 are ruled out.** They call the `fptosi` helper for float-to-int, where the game has an inline
   `cvt.w.s`.
-- **3.0.3 matches everything that matches anywhere.**
+- **3.0.3 matches everything that matches anywhere** among these four. The later builds, ruled out here by their
+  stamp, turned out to match better still ([D4](#build-119-d4)).
 
 ## Open items
 
-- **`-O3` vs `-O4`, speed vs space:** no test function separates them yet (see [the D4 shakedown](#flag-shakedown-d4)).
-  `configure.py` uses `-O4`. Functions with loops should settle it.
-- **`func_0013AE70` (90%):** the original leaves the conditional branch's delay slot empty and sets the return
-  value in the next branch's slot. Every 3.0.x build fills the first slot instead. Notably, EB0017 reproduces the
-  original's branch layout, so this may point to a build between EB0017 and 3.0 that isn't on decomp.me, or to a
-  source form not found yet. Eight source variants tried.
-- **`func_00131CE0` (98.75%):** a single register choice. The original computes a large field offset in `v0`; ours
-  uses `at`. Five source variants tried.
+These were the D2 open items; build 119 ([D4](#build-119-d4)) settled the first three.
+
+- **`-O3` vs `-O4`:** settled in D4 (`-O4`; `ustrToUtf8` separates them).
+- **`func_0013AE70` (90% under every 2002 build):** the original leaves the conditional branch's delay slot empty
+  and sets the return value in the next branch's slot. 100% under build 119 with the D2 source.
+- **`func_00131CE0` (98.75%):** a single register choice (`v0` vs `at` for a large field offset). 100% under
+  build 103 and later with the D2 source.
 - **`func_0013B670`:** CodeWarrior never emits `pmaxw`/`pminw` from C (`MIN`/`MAX` macros and
   `#pragma conditional_move` both produce branches), and the trailing `pextlw` looks hand-written. The original is
   almost certainly an inline-asm clamp helper. CodeWarrior's `asm` blocks can express it
@@ -90,7 +91,7 @@ arithmetic goes through soft-float helpers (`dpmul`, `dptoli`, …), and the gam
 
 ## Inline assembly (D4)
 
-CodeWarrior 3.0.3 compiles MW-style inline assembly, including VU0 macro instructions, in two forms:
+CodeWarrior (3.0.3 and build 119 alike) compiles MW-style inline assembly, including VU0 macro instructions, in two forms:
 
 ```c
 void zero(register float *p)
@@ -135,6 +136,36 @@ Burnout 3 shipped in September 2004. `func_0013AE70`'s empty delay slot (above) 
 run every matched function and the D2 tests through build 119 and its neighbours (b103, b145), and look for a build
 or flag that gives `$at` there.
 
+## Build 119 (D4)
+
+`build/sweep/sweep.py` (a scratch script, not in the repo) compiled every function in C, the D2 and D3 tests and the
+14 of `d4/ustring`, with each of the 19 `3.0.x` builds on decomp.me and compared it with `tools/funcmatch.py`'s
+method. The source was the version tuned for 3.0.3. Selected columns (match %, default flags):
+
+| Function | 3.0.1 (2002) | 3.0.3 | b95 | b103 | **b119** | b145 | b198 |
+|---|---|---|---|---|---|---|---|
+| `func_00131CE0` | 98.8 | 98.8 | 100 | 100 | **100** | 100 | 92.5 |
+| `func_0013AE70` | 90.4 | 90.4 | 90.4 | 90.4 | **100** | 100 | 100 |
+| `func_0014E7E0` (float to int) | 0 | 100 | 87.8 | 100 | **100** | 100 | 100 |
+| `ustrncat` | 89.7 | 100 | 100 | 100 | **100** | 81.4 | 81.4 |
+| `ustrncpy` | 100 | 100 | 100 | 100 | **100** | 74.3 | 74.3 |
+| `ustrFromIntNoSep` | 64.9 | 67.7 | 98.4 | 98.4 | **99.5** | 92.3 | 60.3 |
+| `ustrFromUtf8` | 69.9 | 69.9 | 92.1 | 92.1 | **96.5** | 92.1 | 59.6 |
+| `ustrToUtf8` | 43.5 | 43.5 | 96.9 | 96.9 | **99.9** | 99.9 | 53.4 |
+
+- Every function linked from C so far is also 100% under build 119, and the full build with it reproduces the SHA-1.
+  `func_00131CE0` (the `v0`/`at` register choice) and `func_0013AE70` (the empty delay slot) now match and are
+  linked.
+- Build 119 is the only build at or above every other build on every function. Its neighbours bracket it: b103
+  (2004-05) loses `func_0013AE70`, b145 (2005-02) loses `ustrncat` and `ustrncpy`. Burnout 3 went gold in
+  August 2004, so the exact build was probably between b103 and b119; b119 is the closest one available.
+- The game's `MW MIPS C Compiler (2.4.1.01)` stamp therefore does not come from the game's own objects (b119 stamps
+  `3.0.0`); a prebuilt library object, most likely the Metrowerks runtime built with an older compiler, supplied it.
+- **`-O3` vs `-O4` is settled:** `ustrToUtf8` gives 76.8% at `-O3` and 99.9% at `-O4`. `-O4,s` is identical to `-O4`
+  everywhere; `-O4,p` is far off. The build uses `-O4`.
+- `func_0014EC30` reports 99.7% under every build because objdiff compares its jump-table relocation by symbol;
+  it links byte-identical.
+
 ## Not everything is CodeWarrior
 
 Only the game was built with this compiler. Sony's libraries, RenderWare 3.6, EA DirtySock and the Logitech
@@ -150,5 +181,5 @@ All builds above can be fetched from https://github.com/decompme/compilers/relea
 (gitignored), then compared with:
 
 ```bash
-tools/dock python3 tools/funcmatch.py func_0013B740 c_cpp/src/d2/func_0013B740.c -c compilers/3.0.3-020716 -f=-O4
+tools/dock python3 tools/funcmatch.py func_0013B740 c_cpp/src/d2/func_0013B740.c -c compilers/3.0.1b119-040914 -f=-O4
 ```

@@ -332,3 +332,63 @@ thousandsSep = 0x004E1934; // type:u16 size:0x4
 decimalPoint = 0x004E1938; // type:u16 size:0x4
 plusSign = 0x004E193C; // type:u16 size:0x4
 minusSign = 0x004E1940; // type:u16 size:0x4
+
+// D4: d4/pool, fixed-size pool with a free list (c_cpp/src/d4/pool.c; names are ours)
+poolListFreeAll = 0x002B6C40; // type:func
+poolListFree = 0x002B6CA0; // type:func
+poolListMove = 0x002B6D20; // type:func
+poolListAlloc = 0x002B6DA0; // type:func
+poolListInit = 0x002B6E10; // type:func
+poolSortFree = 0x002B6E20; // type:func
+poolBufferSize = 0x002B6EC0; // type:func
+poolInit = 0x002B6EF0; // type:func
+
+// D4: d4/vdb, the tuning-variable registry (c_cpp/src/d4/vdb.cpp; names are ours)
+vdbSetDatabase = 0x0021B8C0; // type:func
+vdbFreeEntry = 0x0021B8F0; // type:func
+vdbUnregister = 0x0021B910; // type:func
+vdbRegisterVector = 0x0021B9B0; // type:func
+vdbRegisterFloat = 0x0021BB60; // type:func
+vdbRegisterInt = 0x0021BD80; // type:func
+vdbInit = 0x0021BF80; // type:func
+vdbHash = 0x0021BFA0; // type:func
+packName40 = 0x0021AEF0; // type:func
+crc32Table = 0x0049B110; // type:u32 size:0x400
+gVdbDatabase = 0x004E2920; // type:u32 size:0x4
+
+// D4: d4/valuedb, the tuning database class (c_cpp/src/d4/valuedb.cpp; names are ours)
+vdbDbIsEnabled = 0x0024FDE0; // type:func
+vdbDbLoad = 0x0024FE90; // type:func
+vdbDbApply = 0x0024FFC0; // type:func
+vdbDbRemove = 0x00250100; // type:func
+vdbDbAdd = 0x00250110; // type:func
+vdbDbInit = 0x00250120; // type:func
+vtVdbDatabase = 0x004DE0F0; // type:u32 size:0x20
+
+// D4: d4/ustrfmt, %1-%4 substitution in UTF-16 strings (c_cpp/src/d4/ustrfmt.c; names are ours)
+ustrFormat = 0x00212E30; // type:func
+ustrFmtScan = 0x00213050; // type:func
+
+// D4: d4/fs, the file system and its RenderWare file interface (c_cpp/src/d4/fs.cpp; names are ours)
+fsRwTell = 0x00212580; // type:func
+fsRwExists = 0x00212590; // type:func
+fsRwFlush = 0x002125E0; // type:func
+fsRwSeek = 0x002125F0; // type:func
+fsRwEof = 0x00212670; // type:func
+fsRwPuts = 0x00212690; // type:func
+fsRwGets = 0x002126E0; // type:func
+fsRwWrite = 0x002126F0; // type:func
+fsRwRead = 0x00212730; // type:func
+fsRwClose = 0x00212770; // type:func
+fsRwOpen = 0x002127A0; // type:func
+fsDeviceOpen = 0x00212890; // type:func
+fsDeviceInit = 0x002129A0; // type:func
+fsSetDefaultDevice = 0x00212A70; // type:func
+fsJoinPath = 0x00212A80; // type:func
+fsSkipDevicePrefix = 0x00212B80; // type:func
+fsFindDevice = 0x00212BD0; // type:func
+fsInstallRwFileInterface = 0x00212CB0; // type:func
+fsNumDevices = 0x004E28C4; // type:u32 size:0x4
+fsRwInstalled = 0x004E28C8; // type:u32 size:0x4
+fsDefaultDevice = 0x004E28CC; // type:u32 size:0x4
+fsDevices = 0x004E28D0; // type:u32 size:0x8

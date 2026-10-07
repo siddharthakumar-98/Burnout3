@@ -27,8 +27,8 @@ int ustrlen(const u16 *s);
 
 /* UTF-8 <-> UTF-16, after Unicode, Inc.'s ConvertUTF.c. ustrFromUtf8Checked returns 0 (ok), 1 (input ends inside a
  * character), 2 (output full) or 3 (character outside the BMP, or a surrogate). */
-int ustrFromUtf8Checked(const char *src, u16 *dst, int size);
-void ustrFromUtf8(const char *src, u16 *dst, int size);
+int ustrFromUtf8Checked(const u8 *src, u16 *dst, int size);
+void ustrFromUtf8(const u8 *src, u16 *dst, int size);
 void ustrToUtf8(const u16 *src, char *dst, int size);
 
 #ifdef __cplusplus
