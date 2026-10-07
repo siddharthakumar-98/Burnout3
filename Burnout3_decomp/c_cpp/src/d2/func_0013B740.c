@@ -5,11 +5,11 @@ typedef struct Unk0013B740 {
     char sub[1];
 } Unk0013B740;
 
-void func_002139A0(void *dest, int kind, void *value);
+#include "ustring.h"
 
 void func_0013B740(Unk0013B740 *obj, void *value)
 {
     if (value != 0) {
-        func_002139A0(obj->sub, 9, value);
+        ustrncpy((u16 *)obj->sub, 9, value);
     }
 }

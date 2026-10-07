@@ -135,6 +135,7 @@ def render(report: dict) -> str:
             "matched": int(m.get("matched_code", 0)),
             "fn": int(m.get("total_functions", 0)),
             "fn_ok": int(m.get("matched_functions", 0)),
+            "named": sum(1 for f in u.get("functions", []) if not AUTO_NAME.match(f["name"])),
             "start": starts.get(u["name"], 1 << 30),
         })
     units.sort(key=lambda u: u["start"])
@@ -144,18 +145,20 @@ def render(report: dict) -> str:
     pending = sum(u["total"] for u in units) - matched - sum(u["total"] for u in units if u["name"] in INTENTIONAL)
     game = report_cat(report, "game")
     fn_ok, fn = report["measures"].get("matched_functions", 0), report["measures"].get("total_functions", 0)
+    names = named(report)
 
     def color(u):
         return ASM if u["name"] in INTENTIONAL else shade(u["matched"] / u["total"])
 
     def tip(u):
         return (f"{escape(u['name'])}: {u['matched']:,} of {u['total']:,} B matching C, "
-                f"{u['fn_ok']} of {u['fn']} functions")
+                f"{u['fn_ok']} of {u['fn']} functions, {u['named']} named")
 
     body = []
     # headline and legend
     body.append(text(PAD, 24, f"{fn_ok:,} of {fn:,} functions in matching C &#183; SLUS_210.50 (NTSC-U)", 12))
-    body.append(text(PAD, 42, "Burnout 3: Takedown &#183; byte-matching decompilation", 10, DIM))
+    body.append(text(PAD, 42, f"Burnout 3: Takedown &#183; byte-matching decompilation &#183; "
+                              f"{names['all'][0]:,} functions identified by name", 10, DIM))
     for k, (label, fill, value) in enumerate((("matching C", MATCHED, matched), ("intentional asm", ASM, asm),
                                               ("pending asm", "url(#pending)", pending))):
         y = 9 + 17 * k
@@ -204,8 +207,10 @@ def render(report: dict) -> str:
                                                "stays assembly, as in the original", [])]:
         y += 22
         body.append(f'<circle cx="{PAD + 4}" cy="{y - 4}" r="3" fill="{ASM if cat == "vu" else MATCHED}"/>')
+        n = names.get(cat, (0, 0))[0]
         body.append(text(PAD + 14, y, f'<tspan font-weight="700" fill="{BRIGHT}">{escape(title)}</tspan> &#183; '
-                                      f"{escape(desc)}", 11))
+                                      f"{escape(desc)}"
+                                      + (f' <tspan fill="{DIM}">&#183; {n:,} named</tspan>' if n else ""), 11))
         if cat == "vu":
             body.append(text(WIDTH - PAD, y + 1, "asm", 15, ASM, 800, "end"))
             body.append(text(WIDTH - PAD, y + 16, f"{vu_bytes:,} B", 9, TEXT, anchor="end"))
@@ -246,6 +251,23 @@ def render(report: dict) -> str:
             f'<stop offset="0.6" stop-color="{BG}" stop-opacity="0.6"/>'
             f'<stop offset="1" stop-color="{BG}" stop-opacity="0"/></radialGradient></defs>\n')
     return head + "\n".join(body) + "\n</svg>\n"
+
+
+AUTO_NAME = re.compile(r"func_[0-9A-F]{8}$")
+
+
+def named(report: dict) -> dict[str, tuple[int, int]]:
+    """Functions with a real name (not func_XXXXXXXX), as (named, total) per category and under "all". Names come
+    from config/symbol_addrs.txt: identified library functions and decompiled game functions."""
+    out: dict[str, list[int]] = {}
+    for u in report["units"]:
+        cat = u.get("metadata", {}).get("progress_categories", ["?"])[0]
+        for f in u.get("functions", []):
+            for key in (cat, "all"):
+                n = out.setdefault(key, [0, 0])
+                n[0] += not AUTO_NAME.match(f["name"])
+                n[1] += 1
+    return {k: (v[0], v[1]) for k, v in out.items()}
 
 
 def report_cat(report: dict, cat: str) -> dict:

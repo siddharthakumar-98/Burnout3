@@ -47,8 +47,8 @@ four flag sets gave the same result for every function, so the table shows one v
 
 ## Open items
 
-- **`-O3` vs `-O4`, speed vs space:** no test function separates them yet. `configure.py` uses `-O4`. Functions
-  with loops should settle it.
+- **`-O3` vs `-O4`, speed vs space:** no test function separates them yet (see [the D4 shakedown](#flag-shakedown-d4)).
+  `configure.py` uses `-O4`. Functions with loops should settle it.
 - **`func_0013AE70` (90%):** the original leaves the conditional branch's delay slot empty and sets the return
   value in the next branch's slot. Every 3.0.x build fills the first slot instead. Notably, EB0017 reproduces the
   original's branch layout, so this may point to a build between EB0017 and 3.0 that isn't on decomp.me, or to a
@@ -57,7 +57,8 @@ four flag sets gave the same result for every function, so the table shows one v
   uses `at`. Five source variants tried.
 - **`func_0013B670`:** CodeWarrior never emits `pmaxw`/`pminw` from C (`MIN`/`MAX` macros and
   `#pragma conditional_move` both produce branches), and the trailing `pextlw` looks hand-written. The original is
-  almost certainly an inline-asm clamp helper. It stays in assembly until inline asm is worked out.
+  almost certainly an inline-asm clamp helper. CodeWarrior's `asm` blocks can express it
+  ([below](#inline-assembly-d4)); it stays in assembly until it is rewritten that way.
 
 ## Flags found while mapping the binary (D3)
 
@@ -86,6 +87,53 @@ Every variable and every literal gets a section of its own, and the linker decid
 linker kept `.sdata`, `.sbss` and `.bss` in link order but pooled `.lit4` across files, so C units keep loading the
 original pooled literals: `tools/litfix.py` retargets their `R_MIPS_LITERAL` relocations after each compile. Double
 arithmetic goes through soft-float helpers (`dpmul`, `dptoli`, …), and the game has no `.lit8` area.
+
+## Inline assembly (D4)
+
+CodeWarrior 3.0.3 compiles MW-style inline assembly, including VU0 macro instructions, in two forms:
+
+```c
+void zero(register float *p)
+{
+    asm {
+        vsub.xyzw vf1, vf0, vf0
+        sqc2 vf1, 0(p)      /* C variables can be operands */
+    }
+}
+
+asm void zero_asm(register float *p)
+{
+    vsub.xyzw vf1, vf0, vf0
+    sqc2 vf1, 0(a0)
+    jr ra
+    nop
+}
+```
+
+Instructions in an `asm` block are scheduled with the surrounding code (in the first example the `sqc2` lands in the
+`jr` delay slot). GCC-style `asm("..." : : "r"(p))` and `__attribute__` are rejected. This is what VU0-heavy game code
+and the `pmaxw`/`pminw` clamp in `func_0013B670` need.
+
+## Flag shakedown (D4)
+
+`func_0027A900` (a D3 test, 74.38%) differs only in instruction order: the original loads a `.lit4` literal before a
+store that ours puts first. No optimizer setting changes that: `-O3`, `-O4`, `-O4,s` and `-opt level=4,nointrinsics`
+all give 74.38%, while `-O2` (54.38%, no scheduling) and `-O4,p` (67.50%) are further off. So it is a question of the
+source, to settle once its callers are understood. CodeWarrior has no separate scheduling switch: scheduling comes
+with `-opt level=3` and above. `-O3` and `-O4` still produce the same code for everything tried.
+
+## A later build? (D4)
+
+`ustrFromUtf8` (`0x213BE0`, a `ConvertUTF.c`-style loop) keeps its loop test at the top, with the second condition
+as an assembler pseudo-branch (`slti $at`; `bnez $at`) and both delay slots empty. 3.0.3 rotates the loop or fills
+the slots with every source shape tried (11 variants, all flag sets: `-O3`, `-O4`, `-O4,s`, `-O4,p` give 70.9% for the
+`while (*src && size >= 2)` form). Compiled with every build on decomp.me, the 2003-2005 `3.0.1` builds come much
+closer, and **3.0.1 build 119 (2004-09-14) reaches 99.8%**: only the register of that one comparison differs (`v1`
+instead of `$at`). Those builds were ruled out above only by their `3.0.0` version stamp, but the stamp in the
+game's `.comment` may come from a prebuilt library object (the MW runtime is built with an older compiler), and
+Burnout 3 shipped in September 2004. `func_0013AE70`'s empty delay slot (above) is the same symptom. To settle next:
+run every matched function and the D2 tests through build 119 and its neighbours (b103, b145), and look for a build
+or flag that gives `$at` there.
 
 ## Not everything is CodeWarrior
 

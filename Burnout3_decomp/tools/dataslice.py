@@ -13,7 +13,8 @@ are allowed. In .data and .rodata they are snapped to 16-byte boundaries, becaus
 items relative to the start of its file; .sdata needs 4-byte boundaries, and .sbss/.bss (only .space) none. An
 item no code references goes with the next unit when it starts on an 8-byte boundary after the previous unit's
 last referenced item, since every unit's data starts aligned; otherwise it stays with the previous unit. Data
-slices that b3.yaml already carves for C units (d2/, d3/) are kept exactly.
+slices that b3.yaml already carves for C units (d2/, d3/, d4/) are kept exactly, and FORCED_CUTS (slice starts set by
+hand) override the model.
 
 Two pieces are not sliced: .lit4, the float literal pool the linker builds across all files (it fills the start
 of the small-data area and is not in link order), and the COMMON block at the end of .bss (uninitialized globals
@@ -42,7 +43,16 @@ STREAMS = {
 LIT4 = 0x4E0680    # .lit4: linker-pooled float literals, 0x4E0680-0x4E1400 (padded to 0x80)
 COMMON = 0x1ECE340  # COMMON symbols of the ee-gcc libraries, to the end of .bss
 NOLOAD = ("sbss", "bss")
-CARVED = ("d2/", "d3/")  # units carved out of the game units for C (C_UNITS in configure.py)
+CARVED = ("d2/", "d3/", "d4/")  # units carved out of the game units for C (C_UNITS in configure.py)
+# Slice starts settled by hand where the references mislead: (stream, VRAM) -> (unit whose slice starts there,
+# reason). Cuts the model makes for that unit around it are dropped.
+FORCED_CUTS: dict[tuple[str, int], tuple[str, str]] = {
+    ("data", 0x4873F0): ("runtime/libc", "newlib's impure_data (struct _reent, 0x4873F8) and its stdin/stdout/"
+                         "stderr FILEs follow; no code references them, so snapping would hand them to libcdvd"),
+    ("bss", 0x1D6E280): ("game/unit_00222C90", "the memory manager owns the arena 0x67D880-0x1D6D880 (carved up by "
+                         "0x222650) and the heap object 0x1D6D880 (0xA00 bytes, built by its __sinit); the object is "
+                         "only named by other units' code, which would hand everything after the arena to them"),
+}
 SUBSEG = re.compile(r"\s*- \[0x([0-9A-F]+), (\w+), (\S+)\]")
 
 
@@ -116,8 +126,8 @@ def assign(items: list[int], users: dict[int, set[int]], nunits: int) -> list[in
 
 
 def unit_index(units: list[tuple[int, str]]):
-    """Function address -> rank among the units that own data. C units (d2/, d3/) own only their carved slices, so
-    their references count for the unit before them."""
+    """Function address -> rank among the units that own data. C units (d2/, d3/, d4/) own only their carved slices,
+    so their references count for the unit before them."""
     starts = [a for a, _ in units]
     owners = [k for k, (_, name) in enumerate(units) if not name.startswith(CARVED)]
     rank = {u: i for i, u in enumerate(owners)}
@@ -185,6 +195,22 @@ def slices(stream: str, units: list[tuple[int, str]], funcs) -> list[tuple[int, 
         if cands:
             snapped[min(cands, key=lambda a: (moved(a), abs(a - c), a))] = cuts[c]
     cuts = snapped
+    rank = {name: k for k, (_, name) in enumerate(units)}
+    for (st, at), (name, _) in FORCED_CUTS.items():
+        if st != stream:
+            continue
+        if at not in items or name not in rank:
+            sys.exit(f"dataslice: forced cut {stream} 0x{at:08X} {name}: no item starts there, or no such unit")
+        r = rank[name]
+        own = lambda c: cuts[c] if isinstance(cuts[c], int) else rank.get(cuts[c], -1)
+        before = [c for c in sorted(cuts) if c < at]
+        while before and own(before[-1]) >= r:  # earlier starts of this unit or of later ones
+            del cuts[before.pop()]
+        for c in sorted(c for c in cuts if c > at):
+            if own(c) > r:
+                break
+            del cuts[c]  # later starts of this unit or of earlier ones, up to the next unit's
+        cuts[at] = rank[name]
     for start, end, name in fixed_slices()[stream]:
         prev = max((c for c in cuts if c < start), default=items[0])
         after = cuts[max(c for c in cuts if c <= end)] if any(c <= end for c in cuts) else cuts[prev]

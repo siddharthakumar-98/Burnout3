@@ -6,7 +6,7 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** verifying it in PCSX2 and decompiling to C (D4 next) · **Next:** Rust rewrite of Burnout 3
+> **Currently:** verifying it in PCSX2 and decompiling to C (D4 in progress) · **Next:** Rust rewrite of Burnout 3
 
 | Phase | Milestone | State | Updated | Notes |
 |---|---|---|---|---|
@@ -14,7 +14,8 @@ the approach changes.
 | 1 Decomp | D1 Matching build | **done** | 2026-10-05 | `tools/dock ninja` rebuilds `SLUS_210.50` byte-identical from splat assembly (8,948 functions, symbolic relocations). The rebuilt ELF boots in PCSX2 to the menu and into a race. |
 | 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-05 | CodeWarrior **3.0.3** (decomp.me `mwcps2-3.0.3-020716`) at `-O4`. 10 functions in 8 C/C++ files (leaf, float, `$gp` global, call, switch with jump table, C++ constructor) match 100% and are linked; the full SHA-1 still matches. Open: `-O3` vs `-O4` not yet separated; two near-misses and one inline-asm function. See `Burnout3_decomp/docs/compiler.md`. |
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
-| 1 Decomp | D4–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
+| 1 Decomp | D4 Core infrastructure | **in progress** | 2026-10-06 | Ghidra (ghidra-mcp) mirrors the repo through `tools/ghidra_sync.py`; 257 library functions named (syscall stubs, newlib, libgcc, and libraries named by their own messages); inline VU0 `asm` confirmed to compile; subsystems mapped to units in `Burnout3_decomp/docs/d4.md`, awaiting review before decompiling. |
+| 1 Decomp | D5–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
 | 2 Rust rewrite | R1–R6 | not started | | Starts when the Phase 1 gate passes |
 
 ## Overview
@@ -55,7 +56,7 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 | PINE | Off (`EnablePINE = false`, slot 28011) | Enable for Phase 2 trace capture |
 | Docker | Image `b3-build` (linux/amd64: binutils 2.42, wibo 1.2.0, objdiff-cli 3.8.2, splat 0.50.0) | — |
 | Rust | rustc 1.99 stable via Homebrew `rustup` (`/opt/homebrew/opt/rustup/bin`, on `PATH` via `~/.zshrc`) | — |
-| Ghidra | 12.1.4 + OpenJDK 21 (Homebrew), ghidra-emotionengine-reloaded v2.1.38 enabled. Project `Burnout3_decomp` (outside the repo, in `~/Desktop/Ghidra/`) has `SLUS_210.50` imported as `r5900:LE:32:default`, with `gp = 0x4E8670`, a `bss` block `0x4E2680`–`0x1ECE9FF`, and `SECTION4` split into `0x100000`–`0x469DFF` (code), `vu_microcode` `0x469E00`–`0x483EFF` (not executable) and `data` `0x483F00`–`0x4E267F`. | — |
+| Ghidra | 12.1.4 + OpenJDK 21 (Homebrew), ghidra-emotionengine-reloaded v2.1.38 enabled. Project `Burnout3_decomp` (outside the repo, in `~/Desktop/Ghidra/`) has `SLUS_210.50` imported as `r5900:LE:32:default`, with `gp = 0x4E8670`, a `bss` block `0x4E2680`–`0x1ECE9FF`, and `SECTION4` split into `0x100000`–`0x469DFF` (code), `vu_microcode` `0x469E00`–`0x483EFF` (not executable) and `data` `0x483F00`–`0x4E267F`. ghidra-mcp v7.0.0 (bethington) serves it on port 8089; `tools/ghidra_sync.py` keeps it in step with the repo. Turn off **Strict Naming Enforcement** (Edit > Tool Options > GhidraMCP HTTP Server) so library names and struct fields aren't rejected or prefixed. | — |
 | Decomp helpers | Python venv at `Burnout3_decomp/.venv`, objdiff GUI and m2c in `Burnout3_decomp/tools/bin/` (gitignored) | — |
 | Compiler | `Burnout3_decomp/compilers/3.0.3-020716/` (gitignored) is the build in use. The other decomp.me PS2 builds sit beside it for comparison (`2.3.3`, `2.4.0-build0017`, `3.0`, `3.0.1`, and the 2003–2006 `3.0`/`3.0.1` builds). All run under wibo. | — |
 
@@ -108,6 +109,7 @@ configure.py              one combined build: extracts, splits, assembles, compi
 tools/funcmatch.py        compares one function with the original under chosen flags or compiler
 tools/litfix.py           points a C object's float literals at the original's pooled .lit4 entries
 tools/xref.py             cross-references, compiler fingerprints and strings, for mapping the binary
+tools/ghidra_sync.py      keeps the Ghidra project's functions, names and unit tags in step with the repo
 tools/tusplit.py          proposes game translation-unit boundaries and writes the .text block of b3.yaml
 tools/dataslice.py        cuts .data/.rodata/.sdata/.sbss/.bss into per-unit slices and writes that block of b3.yaml
 tools/progress.py         writes PROGRESS.md, progress_map.svg and progress.json from objdiff's report
@@ -127,7 +129,7 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | Assemble and link | GNU binutils (`mips-linux-gnu-as -march=r5900`, `ld`, `objcopy`). `tools/elf.py rebuild` wraps the linked segment in the original ELF container. |
 | Split and disassemble | splat (`platform: ps2`, `compiler: MWCCPS2`) and spimdisasm (R5900: MMI, `lq`/`sq`, VU0 macro ops) |
 | Diff and progress | objdiff (macOS GUI and CLI reports), asm-differ, decomp-permuter, decomp.me scratches |
-| First-draft C | Ghidra 12.1.x + ghidra-emotionengine-reloaded, m2c. A planned sync script keeps Ghidra and `symbol_addrs.txt` names consistent. |
+| First-draft C | Ghidra 12.1.x + ghidra-emotionengine-reloaded, driven through ghidra-mcp; m2c. `tools/ghidra_sync.py` mirrors the repo's functions, names (`config/symbol_addrs.txt`) and units into Ghidra. |
 | Runtime | PCSX2 2.x: `PCSX2 -elf build/SLUS_210.50 -- <ISO>` boots the rebuilt ELF with the disc inserted from the start. Debugger and PINE for spot checks. |
 | Reference | `librw` (open RenderWare 3.x reimplementation), the Reburn 3 forum (forum.mattkc.com), CodeBreaker addresses, and the tuning-menu labels compiled into the ELF. No proprietary SDKs are copied. |
 
@@ -138,7 +140,7 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | **D1** | Matching build | Section boundaries recovered. `ninja` builds `build/SLUS_210.50` entirely from generated assembly with SHA-1 `332be40d…`. | **done** |
 | D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files, CodeWarrior 3.0.3 `-O4` |
 | D3 | Map the binary | libsce, runtime (MW runtime, newlib), RenderWare 3.6 and other libraries, and VU microcode labeled and fenced off. Game TU boundaries carved, `.data`/`.rodata` split. Progress reported per category (`game`/`rw`/`rwa`/`sce`/`runtime`/`ea`/`lg`). | **done**: one unit per library, 358 provisional game units, per-unit slices of all five data sections, `.lit4` pool handled for C units |
-| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization | |
+| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are matching C and linked, core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **in progress**: tooling and library names done, subsystem map written |
 | D5 | Main loop and game flow | Boot, main loop, game state machine, mode/stage loading, frontend flow | |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
 | D7 | Gameplay rules | Boost economy, scoring, takedown detection and types, crash state machine, Impact Time, aftertouch, crash cameras | |

@@ -70,6 +70,9 @@ segments:
       - [0x01FD00, asm, runtime/libc]           # newlib libc
       - [0x02BFA0, asm, runtime/libgcc]         # __muldi3, __divdi3 family (each with its __clz_tab), fp-bit
       - [0x02EB30, asm, game/unit_0012EB30]
+      - [0x02EEF0, asm, game/unit_0012EEF0]
+      - [0x030030, asm, game/unit_00130030]
+      - [0x030C20, asm, game/unit_00130C20]
       - [0x031AA0, asm, d2/func_00131AA0]
       - [0x031AC0, asm, game/unit_00131AC0]
       - [0x031CE0, asm, d2/func_00131CE0]
@@ -104,29 +107,29 @@ segments:
       - [0x0A4150, asm, game/unit_001A4150]
       - [0x0A8620, asm, game/unit_001A8620]
       - [0x0AB120, asm, game/unit_001AB120]
+      - [0x0D2EE0, asm, game/unit_001D2EE0]
+      - [0x0D3A50, asm, game/unit_001D3A50]
       - [0x0D45B0, asm, game/unit_001D45B0]
       - [0x0D4680, asm, game/unit_001D4680]
       - [0x0D8260, asm, rw/renderware]          # RenderWare 3.6 core, world, PS2 sky2 driver ($Id strings)
       - [0x111C30, asm, game/unit_00211C30]
       - [0x1127A0, asm, game/unit_002127A0]
       - [0x1129A0, asm, game/unit_002129A0]
-      - [0x1130F0, asm, game/unit_002130F0]
+      - [0x1130F0, asm, d4/ustring]
       - [0x113E10, asm, game/unit_00213E10]
       - [0x115660, asm, sce/libpad2]
       - [0x115F18, asm, sce/libdbc]
       - [0x116E40, asm, game/unit_00216E40]
-      - [0x116FF0, asm, game/unit_00216FF0]
-      - [0x117010, asm, game/unit_00217010]
-      - [0x117060, asm, game/unit_00217060]
-      - [0x117070, asm, game/unit_00217070]
+      - [0x117610, asm, game/unit_00217610]
       - [0x117850, asm, game/unit_00217850]
       - [0x11A5F0, asm, game/unit_0021A5F0]
       - [0x11AD60, asm, game/unit_0021AD60]
       - [0x11B000, asm, game/unit_0021B000]
       - [0x11B5E0, asm, game/unit_0021B5E0]
       - [0x11B8C0, asm, game/unit_0021B8C0]
-      - [0x1220E0, asm, game/unit_002220E0]
-      - [0x12BEE0, asm, game/unit_0022BEE0]
+      - [0x122300, asm, game/unit_00222300]
+      - [0x122C90, asm, game/unit_00222C90]
+      - [0x12B850, asm, game/unit_0022B850]
       - [0x12D2E0, asm, game/unit_0022D2E0]
       - [0x1370A0, asm, game/unit_002370A0]
       - [0x137120, asm, game/unit_00237120]
@@ -189,7 +192,9 @@ segments:
       - [0x1AD870, asm, rwa/unit_002AD870]
       - [0x1AD8E0, asm, rwa/unit_002AD8E0]
       - [0x1ADDD0, asm, rwa/unit_002ADDD0]
-      - [0x1B52C0, asm, game/unit_002B52C0]
+      - [0x1B52D0, asm, game/unit_002B52D0]
+      - [0x1B6C40, asm, game/unit_002B6C40]
+      - [0x1B6FF0, asm, game/unit_002B6FF0]
       - [0x1B7110, asm, game/unit_002B7110]
       - [0x1B96D0, asm, game/unit_002B96D0]
       - [0x1BCF60, asm, game/unit_002BCF60]
@@ -503,17 +508,18 @@ segments:
       - [0x384140, data, sce/libkernl]
       - [0x385840, data, sce/libcdvd]
       - [0x3873F0, data, runtime/libc]
-      - [0x387B60, data, game/unit_0012EB30]
+      - [0x387B60, data, game/unit_0012EEF0]
+      - [0x387C40, data, game/unit_00130030]
       - [0x388050, data, game/unit_0014DDB0]
       - [0x388080, data, game/unit_0014ECB0]
       - [0x388220, data, game/unit_0015F270]
-      - [0x39A120, data, game/unit_001AB120]
+      - [0x39A120, data, game/unit_001D3A50]
       - [0x39A160, data, rw/renderware]
       - [0x39B080, data, game/unit_00213E10]
       - [0x39B0C0, data, sce/libpad2]
       - [0x39B0F0, data, sce/libdbc]
       - [0x39B110, data, game/unit_0021B8C0]
-      - [0x39B510, data, game/unit_002220E0]
+      - [0x39B510, data, game/unit_00222C90]
       - [0x39B540, data, game/unit_0022D2E0]
       - [0x39B640, data, sce/libinsck]
       - [0x39B6C0, data, sce/libmrpc]
@@ -570,6 +576,8 @@ segments:
       - [0x3B3560, rodata, runtime/libc]
       - [0x3B3E80, rodata, runtime/libgcc]
       - [0x3B42A0, rodata, game/unit_0012EB30]
+      - [0x3B42C0, rodata, game/unit_00130030]
+      - [0x3B42E0, rodata, game/unit_00130C20]
       - [0x3B5B90, rodata, game/unit_00131D20]
       - [0x3B5D80, rodata, game/unit_00134930]
       - [0x3B5D90, rodata, game/unit_00136E10]
@@ -583,11 +591,13 @@ segments:
       - [0x3B77F0, rodata, game/unit_001A4150]
       - [0x3B7A40, rodata, game/unit_001A8620]
       - [0x3B7AB0, rodata, game/unit_001AB120]
+      - [0x3B7DD0, rodata, game/unit_001D2EE0]
+      - [0x3B7DF0, rodata, game/unit_001D3A50]
       - [0x3B80F0, rodata, game/unit_001D45B0]
       - [0x3B8110, rodata, game/unit_001D4680]
       - [0x3B8140, rodata, rw/renderware]
       - [0x3B96E0, rodata, game/unit_002127A0]
-      - [0x3B9700, rodata, game/unit_002130F0]
+      - [0x3B9700, rodata, d4/ustring]
       - [0x3B9850, rodata, game/unit_00213E10]
       - [0x3B98C0, rodata, sce/libpad2]
       - [0x3B9920, rodata, sce/libdbc]
@@ -595,7 +605,7 @@ segments:
       - [0x3B9BC0, rodata, game/unit_0021A5F0]
       - [0x3B9C20, rodata, game/unit_0021AD60]
       - [0x3B9C90, rodata, game/unit_0021B8C0]
-      - [0x3B9DA0, rodata, game/unit_002220E0]
+      - [0x3B9DA0, rodata, game/unit_00222C90]
       - [0x3B9E10, rodata, game/unit_0022D2E0]
       - [0x3BB1D0, rodata, sce/libmrpc]
       - [0x3BB280, rodata, game/unit_0023B000]
@@ -798,7 +808,7 @@ segments:
       # link order, so it stays one piece (padded to 0x80). .sdata, .sbss and .bss follow link order and are cut
       # into one slice per unit by tools/dataslice.py; .bss ends with the COMMON symbols of newlib and lgkbm.
       - [0x3E0680, sdata, lit4]
-      - [0x3E1400, sdata, game/unit_0012EB30]
+      - [0x3E1400, sdata, game/unit_00130C20]
       - [0x3E1414, sdata, game/unit_00131AC0]
       - [0x3E141C, sdata, game/unit_0013D530]
       - [0x3E1440, sdata, game/unit_0014DD40]
@@ -808,11 +818,11 @@ segments:
       - [0x3E1570, sdata, game/unit_0015F270]
       - [0x3E15A8, sdata, game/unit_001AB120]
       - [0x3E1718, sdata, rw/renderware]
-      - [0x3E1934, sdata, game/unit_002130F0]
+      - [0x3E1934, sdata, d4/ustring]
       - [0x3E1944, sdata, game/unit_00213E10]
       - [0x3E1950, sdata, game/unit_00217850]
-      - [0x3E1954, sdata, game/unit_002220E0]
-      - [0x3E1958, sdata, game/unit_0022BEE0]
+      - [0x3E1954, sdata, game/unit_00222C90]
+      - [0x3E1958, sdata, game/unit_0022B850]
       - [0x3E1964, sdata, game/unit_0022D2E0]
       - [0x3E196C, sdata, game/unit_00237200]
       - [0x3E1970, sdata, game/unit_0023B000]
@@ -866,18 +876,22 @@ segments:
       - [0x3E2644, sdata, game/unit_00454120]
       - [0x3E2658, sdata, game/unit_0045BB10]
       - [0x3E2668, sdata, game/unit_00469550]
-      - { type: sbss, vram: 0x004E2680, name: game/unit_0012EB30 }
+      - { type: sbss, vram: 0x004E2680, name: game/unit_00130030 }
+      - { type: sbss, vram: 0x004E26A0, name: game/unit_00130C20 }
       - { type: sbss, vram: 0x004E26A4, name: game/unit_00136480 }
       - { type: sbss, vram: 0x004E26A8, name: game/unit_0014ECB0 }
       - { type: sbss, vram: 0x004E26B4, name: game/unit_0015F270 }
       - { type: sbss, vram: 0x004E2704, name: game/unit_001A8620 }
       - { type: sbss, vram: 0x004E2708, name: game/unit_001AB120 }
+      - { type: sbss, vram: 0x004E2730, name: game/unit_001D2EE0 }
+      - { type: sbss, vram: 0x004E273C, name: game/unit_001D3A50 }
       - { type: sbss, vram: 0x004E2754, name: rw/renderware }
       - { type: sbss, vram: 0x004E28C4, name: game/unit_002129A0 }
       - { type: sbss, vram: 0x004E28D8, name: game/unit_00217850 }
       - { type: sbss, vram: 0x004E2910, name: game/unit_0021B5E0 }
       - { type: sbss, vram: 0x004E291C, name: game/unit_0021B8C0 }
-      - { type: sbss, vram: 0x004E2938, name: game/unit_002220E0 }
+      - { type: sbss, vram: 0x004E293C, name: game/unit_00222300 }
+      - { type: sbss, vram: 0x004E2944, name: game/unit_00222C90 }
       - { type: sbss, vram: 0x004E2950, name: game/unit_0022D2E0 }
       - { type: sbss, vram: 0x004E2964, name: game/unit_002370A0 }
       - { type: sbss, vram: 0x004E2968, name: game/unit_0024B2A0 }
@@ -946,7 +960,8 @@ segments:
       - { type: bss, vram: 0x004E3040, name: sce/libmpeg }
       - { type: bss, vram: 0x004E3240, name: sce/libkernl }
       - { type: bss, vram: 0x004EAF40, name: sce/libcdvd }
-      - { type: bss, vram: 0x004ED7E0, name: game/unit_0012EB30 }
+      - { type: bss, vram: 0x004ED7E0, name: game/unit_00130030 }
+      - { type: bss, vram: 0x004EDFF0, name: game/unit_00130C20 }
       - { type: bss, vram: 0x004F5080, name: game/unit_00131D20 }
       - { type: bss, vram: 0x004F509C, name: game/unit_00134930 }
       - { type: bss, vram: 0x0051BF9C, name: game/unit_00136480 }
@@ -956,6 +971,8 @@ segments:
       - { type: bss, vram: 0x00665EB0, name: game/unit_0015F270 }
       - { type: bss, vram: 0x0066C540, name: game/unit_001A8620 }
       - { type: bss, vram: 0x0066C580, name: game/unit_001AB120 }
+      - { type: bss, vram: 0x0066DF80, name: game/unit_001D2EE0 }
+      - { type: bss, vram: 0x0066E100, name: game/unit_001D3A50 }
       - { type: bss, vram: 0x0066EB20, name: game/unit_001D4680 }
       - { type: bss, vram: 0x00670AE0, name: rw/renderware }
       - { type: bss, vram: 0x00676440, name: game/unit_002129A0 }
@@ -963,7 +980,8 @@ segments:
       - { type: bss, vram: 0x006797C8, name: sce/libdbc }
       - { type: bss, vram: 0x0067CD90, name: game/unit_00217850 }
       - { type: bss, vram: 0x0067CFD0, name: game/unit_0021B8C0 }
-      - { type: bss, vram: 0x0067D834, name: game/unit_002220E0 }
+      - { type: bss, vram: 0x0067D880, name: game/unit_00222300 }
+      - { type: bss, vram: 0x01D6E280, name: game/unit_00222C90 }
       - { type: bss, vram: 0x01D6EDD0, name: game/unit_0022D2E0 }
       - { type: bss, vram: 0x01D80700, name: game/unit_002370A0 }
       - { type: bss, vram: 0x01D80710, name: sce/libinsck }

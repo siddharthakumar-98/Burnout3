@@ -10,3 +10,9 @@ ofs_0012AD18 = 0x0012AD18;
 ofs_0012AD24 = 0x0012AD24;
 ofs_0012C0E0 = 0x0012C0E0;
 ofs_00143840 = 0x00143840;
+
+/* CodeWarrior's soft-float helper names, which the original linker resolved to libgcc's functions. Only the ones
+   game code is seen calling are listed (a C unit calling another one fails to link, rather than linking wrongly). */
+dptoli = __fixdfsi;
+dptofp = __truncdfsf2;
+fptodp = __extendsfdf2;

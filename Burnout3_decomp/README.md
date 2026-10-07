@@ -9,7 +9,7 @@ never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing t
 > **Status:** D3 done, D4 next. The compiler is identified (CodeWarrior 3.0.3,
 > `-O4 -str readonly -Cpp_exceptions off`), and 12 functions in 10 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
-> game code is split into 358 provisional translation units, and each unit has its own slices of `.data`, `.rodata`,
+> game code is split into 363 provisional translation units, and each unit has its own slices of `.data`, `.rodata`,
 > `.sdata`, `.sbss` and `.bss`. Progress is reported per category in [PROGRESS.md](PROGRESS.md). The full build still
 > reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
 > milestones and [docs/layout.md](docs/layout.md) for the memory layout.
@@ -96,6 +96,7 @@ The decomp has two sides plus shared files at the top level.
 | `tools/funcmatch.py` | Compares one C/C++ function with the original under chosen flags or compiler | yes |
 | `tools/litfix.py` | Points a compiled object's float literals at the original's pooled `.lit4` entries (run by the build) | yes |
 | `tools/xref.py`, `tools/tusplit.py`, `tools/dataslice.py` | Map the binary: cross-references, translation-unit boundaries, per-unit data slices | yes |
+| `tools/ghidra_sync.py` | Keeps the Ghidra project (via ghidra-mcp) in step with the repo's functions, names and units | yes |
 | `tools/progress.py`, `tools/progress_map.py` | Write `PROGRESS.md`, the progress map `progress_map.svg` and its badge data `progress.json` from objdiff's report | yes |
 | `tools/dock` | Runs a command in the build container | yes |
 | `docker/Dockerfile` | Build image: binutils-mips-linux-gnu, wibo, objdiff-cli, splat | yes |

@@ -69,7 +69,7 @@ fingerprints that hold across the whole binary:
 | `0x241BC0` | `sce/libmc2` | sce | `libmc2:` strings, `Sony PS2 Memory Card Format`, `PsIIlibmc2` data |
 | `0x2499D0` | `sce/netcnfif` | sce | `SceNetcnfifCallbackThread` (`.rodata` from `0x4BB580`, `.data` from `0x49BA00`) |
 | `0x24ABB0` | `sce/libscf` | sce | reads `rom0:ROMVER`; uses the data after `PsIIlibscf` |
-| `0x24B2A0` | `game/…` | game | includes RenderWare Audio, `0x290B10`–`0x2B52C0` (`rwa/`, see below) |
+| `0x24B2A0` | `game/…` | game | includes RenderWare Audio, `0x290B10`–`0x2B52D0` (`rwa/`, see below) |
 | `0x2C28C0` | `lg/lgcodec` | lg | Logitech headset audio: Speex (narrowband and sub-band CELP), G.723, µ-law (`lgCodecUlawEncode`) and liblgaud (`liblgaud version 1.10.001`); not split further |
 | `0x2E2700` | `game/…` | game | |
 | `0x304008` | `lg/lgkbm` | lg | Logitech USB keyboard/mouse (`LgKbM library version … May 18 2004`) |
@@ -85,7 +85,7 @@ Two single functions inside game ranges (`0x2174A0`, `0x2FC530`) use branch-like
 functions and are called from game code; they are probably game functions with inline asm.
 
 One library was compiled with CodeWarrior inside the game ranges and so has no fingerprint: **RenderWare Audio**
-(EE side), `0x290B10`–`0x2B52C0`, 701 functions (`rwa/`, its own progress category). It was found as a
+(EE side), `0x290B10`–`0x2B52D0`, 702 functions (`rwa/`, its own progress category). It was found as a
 *call-closed* region: none of its functions calls game code outside it, while 41 game functions call into it, and
 it holds `RWA ERROR!`, `RwaStreamFormat…` and `RwaRPCTransfer` strings. The same test finds only two other closed
 regions (`0x214610`, `0x35F0A0`, about 55 functions each), and game code calls those from 230 and 61 places, so they
@@ -93,9 +93,9 @@ are game utility modules.
 
 ## Game translation units
 
-The game and RenderWare Audio ranges are split into **358 provisional translation units** (337 `game/unit_<VRAM>`
-and 21 `rwa/unit_<VRAM>`; median 6 functions). The C units carved out of them (`d2/`, `d3/`) cut 9 in two, so
-`b3.yaml` lists 367 game and RenderWare Audio pieces. The binary has no file names, so `tools/tusplit.py` infers
+The game and RenderWare Audio ranges are split into **363 provisional translation units** (342 `game/unit_<VRAM>`
+and 21 `rwa/unit_<VRAM>`; median 7 functions). The C units carved out of them (`d2/`, `d3/`) cut 9 in two, so
+`b3.yaml` lists 372 game and RenderWare Audio pieces. The binary has no file names, so `tools/tusplit.py` infers
 the boundaries and writes the `.text` block of `b3.yaml` (`python3 tools/tusplit.py --yaml`). It links functions
 that must share a file and cuts where nothing links:
 
@@ -106,7 +106,7 @@ that must share a file and cuts where nothing links:
 | `.rodata`, `.data`, `.sdata` and `.sbss` references out of link order | Those sections follow link order (items used only by nearby functions correlate with function order at 0.99, 0.99, 1.00 and 0.99), so an earlier function using a later address than a later function puts both in one file. `.bss` follows link order more loosely (0.80) and is not used for this. |
 | Methods that appear in only one vtable | A class's own methods are defined in its file, and vtables are laid out in link order. |
 | Calls to a helper used only nearby | The pattern of a file-local `static` function. |
-| C++ static initializers | One per file and in link order through `.ctor`. 110 of the 158 locate reliably through the private data they share with game functions; consecutive ones must be in different files, which forces 26 cuts. |
+| C++ static initializers | One per file and in link order through `.ctor`. 110 of the 158 locate reliably through the private data they share with game functions; consecutive ones must be in different files, which forces 25 cuts where no other boundary separates them. |
 
 Gaps that no link crosses become boundaries unless the piece after them carries no evidence of its own (no private
 data, no `.sdata`/`.sbss`/`.bss` variable that only nearby functions use, no vtable entry); then boundaries that
@@ -115,10 +115,12 @@ is split across units (0 of 88), no `.sdata` float constant is (0 of 25), and no
 
 **Provisional:** a unit may still hold several real files, or one file may be cut in two. Units will be merged or
 split as decompiling uncovers static data and string order. Two units contain two initializer anchors and so must
-hold at least two files each: `game/unit_0041D3E0` and `game/unit_0042C2A0`.
+hold at least two files each: `game/unit_0041D3E0` and `game/unit_0042C2A0`. Boundaries settled by hand go into
+`FORCED_CUTS` and `MERGES` in `tools/tusplit.py`, each with its reason, so regenerating keeps them.
 
 Before the `.lit4` pool was understood (the first D3 pass), shared float literals counted as same-file evidence
-and the split had 377 units. Dropping that evidence and adding the small-data sections gives the 358 above.
+and the split had 377 units. Dropping that evidence and adding the small-data sections gave 358; the boundaries
+settled by hand in D4 ([d4.md](d4.md#unit-boundaries)) give the 363 above.
 
 ## Data slices
 
@@ -142,14 +144,17 @@ that block of `b3.yaml` (`python3 tools/dataslice.py --yaml`):
 - crt0's references don't count: it clears `.sbss`/`.bss` from their start address, which is not a variable of its
   own.
 - C units' carved slices (the D2 jump table) are kept exactly so the C unit can replace them.
+- Slice starts the references mislead are set by hand in `FORCED_CUTS`, each with its reason. The one so far is
+  libc's `.data` at `0x4873F0`: newlib's `impure_data` (`struct _reent`) and its stdin/stdout/stderr `FILE`s follow,
+  and no code references them directly, so snapping would hand them to libcdvd.
 
 | Section | Slices | Code references landing in their own unit's slice |
 |---|---|---|
-| `.data` | 65 | 94.8% |
-| `.rodata` | 229 | 96.3% |
+| `.data` | 66 | 94.9% |
+| `.rodata` | 233 | 96.2% |
 | `.sdata` | 68 | 92.1% |
-| `.sbss` | 75 | 83.2% |
-| `.bss` | 87 | 23.3% |
+| `.sbss` | 79 | 83.2% |
+| `.bss` | 91 | 23.2% |
 
 Most of the rest are globals used by other files. `.bss` is dominated by them: a few early files (the one with
 `main` among them) define state that code everywhere reads, so its slices are the coarsest.
