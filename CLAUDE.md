@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-Matching decomp of Burnout 3: Takedown (PS2, SLUS_210.50, SHA-1 `332be40d…`), then a Rust rewrite.
+Matching C/C++ decomp of Burnout 3: Takedown (PS2, SLUS_210.50, SHA-1 `332be40d…`) is the current goal, including
+library reconstruction. A Rust rewrite is deferred as a long-term goal after the verified decomp.
 `ROADMAP.md` is the source of truth for plan and status; keep its Status table current. D4 work is tracked in
 `Burnout3_decomp/docs/d4.md` (subsystem map, unit boundaries, progress log, open questions).
 
@@ -38,7 +39,7 @@ tools/dock python3 tools/funcmatch.py <func> --variants build/var/<func>   # one
   `dataslice.py` (per-unit data slices; data `FORCED_CUTS` keyed by `(stream, VRAM)`), `litfix.py` (`.lit4` pool),
   `xref.py`, `elf.py`, `progress*.py`, `ghidra_sync.py`.
 - `Burnout3_decomp/docs/`: `layout.md` (memory map, units), `compiler.md` (compiler identification), `d4.md`.
-- `Burnout3_rust/`: Phase 2 (not started; ISO extractor `iso_extract` lives here).
+- `Burnout3_rust/`: Phase 2 (deferred; long-term goal; ISO extractor `iso_extract` lives here).
 
 ## Adding or decompiling a unit
 1. Carve it in `b3.yaml` (16-byte aligned start/end), or regenerate with `tusplit.py --yaml` / `dataslice.py --yaml`.

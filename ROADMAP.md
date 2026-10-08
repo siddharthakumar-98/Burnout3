@@ -1,4 +1,4 @@
-# Roadmap: Burnout 3: Takedown, decompiled and rewritten in Rust
+# Roadmap: Burnout 3: Takedown decompilation
 
 This file is the single source of truth for the project's plan and status. Update it whenever a milestone completes or
 the approach changes.
@@ -6,7 +6,7 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** decompiling to C (D4: 66 functions linked, a tail of 7 near-misses left) · **Next:** Rust rewrite of Burnout 3
+> **Currently:** decompiling to C/C++ (D4: 66 functions linked, a tail of 7 near-misses left) · **Long-term goal:** Rust rewrite after the verified decomp
 
 | Phase | Milestone | State | Updated | Notes |
 |---|---|---|---|---|
@@ -16,16 +16,18 @@ the approach changes.
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
 | 1 Decomp | D4 Core infrastructure | **in progress (tail)** | 2026-10-08 | Linked from C: file system (`d4/fs`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), pools, memory manager (`d4/memmgr`), UTF-16 formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files with the SHA-1 intact. In C but not linked yet, 7 near-misses: ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 2/5. Library functions named (libcdvd included), libcdvd callers classified, C++ conventions in `c_cpp/README.md`. Matching runs through one subagent at a time (`.claude/agents/decomp-matcher.md`). See `Burnout3_decomp/docs/d4.md`. |
 | 1 Decomp | D5–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
-| 2 Rust rewrite | R1–R6 | not started | | Starts when the Phase 1 gate passes |
+| 2 Rust rewrite | R1–R6 | deferred; long-term goal | 2026-10-08 | Requires the verified Phase 1 decomp; not current work |
 
 ## Overview
 
 | Phase | Goal | Where |
 |---|---|---|
 | **1. Decompile Burnout 3** (active) | C/C++ source that CodeWarrior compiles into a byte-identical `SLUS_210.50` | `Burnout3_decomp/` |
-| **2. Rewrite Burnout 3 in Rust** (next) | A native Rust port of the finished decomp, with the same gameplay and assets from your disc | `Burnout3_rust/` |
+| **2. Rewrite Burnout 3 in Rust** (long-term goal) | A native Rust port of the finished decomp, with the same gameplay and assets from your disc | `Burnout3_rust/` |
 
-Phase 2 starts only after **all** of Phase 1 is done and verified. It ports from matched source, never from guesses.
+Phase 1 decompilation is the current project focus, including library reconstruction in D11. Phase 2 is a deferred,
+long-term goal and may start only after **all** of Phase 1 is done and verified. It ports from matched source, never
+from guesses.
 
 ### Related projects
 This repo is one of three. Dependencies point one way: this repo never depends on the others.
@@ -153,6 +155,10 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 Work runs infrastructure first, then gameplay, then presentation, then libraries. Headers and struct layouts grow
 outward from core code. Within a milestone, work goes one translation unit at a time, smallest functions first.
 
+Public source and decompilation candidates for D11 are recorded in
+[library references](Burnout3_decomp/docs/library-references.md). Existing vendor code can guide recovery, but
+every adopted function still needs to match this binary under its own library toolchain.
+
 ### Risks and open questions
 | Risk / question | Mitigation |
 |---|---|
@@ -219,13 +225,14 @@ In `~/Library/Application Support/PCSX2/logs/emulog.txt`, `Serial: SLUS-21050` m
 
 ---
 
-## Phase 2: Rewrite Burnout 3 in Rust (next)
+## Phase 2: Rewrite Burnout 3 in Rust (long-term goal)
 
 **Goal:** a native Rust version of Burnout 3, in `Burnout3_rust/`, that plays the same as the original. It loads assets
 from your ISO at runtime and is ported from the finished, verified decomp. It uses idiomatic Rust wherever that
 doesn't change gameplay.
 
-**Starts when:** the Phase 1 gate passes.
+**Status:** deferred. The verified Phase 1 decomp is a prerequisite; passing its gate does not automatically start
+the rewrite.
 
 ### Tooling and structure
 | Crate / tool | Role |

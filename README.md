@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <b>A byte-matching decompilation of Burnout 3: Takedown (PS2, NTSC-U), followed by a native Rust rewrite ported from it.</b>
+  <b>A byte-matching C/C++ decompilation of Burnout 3: Takedown (PS2, NTSC-U). A native Rust rewrite is a long-term goal.</b>
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <a href="Burnout3_decomp/README.md#building"><img src="https://img.shields.io/badge/build-SHA--1%20match-ff4b3e?style=flat-square&labelColor=0d1117" alt="Build: SHA-1 match"></a>
   <a href="#supported-version"><img src="https://img.shields.io/badge/PS2-SLUS--21050-5ec8f2?style=flat-square&logo=playstation&logoColor=white&labelColor=0d1117" alt="PS2 SLUS-21050"></a>
   <a href="Burnout3_decomp/docs/compiler.md"><img src="https://img.shields.io/badge/CodeWarrior-3.0.3-c3cbd8?style=flat-square&labelColor=0d1117" alt="CodeWarrior 3.0.3"></a>
-  <a href="Burnout3_rust/README.md"><img src="https://img.shields.io/badge/Rust%20rewrite-planned-c3cbd8?style=flat-square&logo=rust&logoColor=white&labelColor=0d1117" alt="Rust rewrite: planned"></a>
+  <a href="Burnout3_rust/README.md"><img src="https://img.shields.io/badge/Rust%20rewrite-long--term-c3cbd8?style=flat-square&logo=rust&logoColor=white&labelColor=0d1117" alt="Rust rewrite: long-term goal"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-c3cbd8?style=flat-square&labelColor=0d1117" alt="License: GPL-3.0"></a>
 </p>
 
@@ -30,7 +30,7 @@
 > [!NOTE]
 > **Done:** the matching build (byte-identical, from assembly), the compiler (D2) and the map of the binary (D3).
 > **Now:** core infrastructure (D4): 260 library functions identified by name and the subsystems mapped, with
-> decompiling next. **Next:** the Rust rewrite.
+> decompiling next. **Long-term goal:** a Rust rewrite after the verified decomp.
 >
 > **Progress:** 12 of 9,107 functions (0.13%) in matching C, which is 0.02% of the game's code and 0.01% of the
 > whole executable.
@@ -53,12 +53,12 @@ game and compiler.
 | Phase | | State |
 |---|---|---|
 | **1. Decompile** to byte-matching C/C++ | [`Burnout3_decomp/`](Burnout3_decomp/README.md) | 🟠 D0–D3 done, D4 in progress. The build matches the original SHA-1 and boots in PCSX2. |
-| **2. Rewrite** in Rust | [`Burnout3_rust/`](Burnout3_rust/README.md) | ⚪ Starts when Phase 1 is 100%. Only the ISO extractor exists. |
+| **2. Rewrite** in Rust (long-term goal) | [`Burnout3_rust/`](Burnout3_rust/README.md) | ⚪ Deferred; requires the completed, verified Phase 1 decomp. Only the ISO extractor exists. |
 
 1. **Decompile.** C/C++ that the original compiler (Metrowerks CodeWarrior for PS2, Version 3.0.3) builds into a
    byte-identical `SLUS_210.50`. The build already reproduces the original exactly from assembly, and functions move
    to C one at a time: each one must match before it is linked.
-2. **Rewrite in Rust.** A native port of the finished decomp that plays the same, loads assets from your own disc,
+2. **Long-term goal: rewrite in Rust.** A native port of the finished decomp that plays the same, loads assets from your own disc,
    and is checked against the decomp function by function and frame by frame. It ports from matched source, never
    from guesses, so it starts only after Phase 1 is complete.
 
