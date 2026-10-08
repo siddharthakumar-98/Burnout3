@@ -34,7 +34,7 @@ tools/dock python3 tools/funcmatch.py <func> --variants build/var/<func>   # one
 
 ## Layout
 - `Burnout3_decomp/assembly/splat/b3.yaml`: the split. Game units `game/unit_<VRAM>`; carved units under `d2/`,
-  `d3/`, `d4/` survive regeneration.
+  `d3/`, `d4/`, `d5/` survive regeneration.
 - `Burnout3_decomp/configure.py`: `C_UNITS` (`linked: True` only at 100%), `CATEGORIES`, compiler and `CFLAGS`.
 - `Burnout3_decomp/config/symbol_addrs.txt`: names. Functions `type:func`; data needs a real type plus size
   (`type:u8 size:0x100`, `u16`, `u32`, `f32`); `type:data` breaks splat.

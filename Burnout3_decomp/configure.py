@@ -74,6 +74,8 @@ C_UNITS = {
     "d4/func_001AB010": {"linked": True},
     "d4/memmgr": {"linked": True},  # its data (arena, instance, .sbss words, vtable) stays in assembly for now
     "d4/ustring": {"linked": False},  # 12 of 14 at 100%; ustrFromFloat, ustrFromFloatNoSep remain (docs/d4.md)
+    # D5: main loop and game flow (docs/d5.md)
+    "d5/unit_00131AC0": {"linked": True},  # its .sdata (0.4f, 1.0f) stays in assembly for now
 }
 
 LD_SCRIPT_SPLAT = BUILD / f"{BASENAME}.ld"
@@ -110,6 +112,7 @@ CATEGORIES = {
     "d2": ("game", None),
     "d3": ("game", None),
     "d4": ("game", None),
+    "d5": ("game", None),
     "sinit": ("game", None),
     "rw": ("rw", "RenderWare 3.6"),
     "rwa": ("rwa", "RenderWare Audio (EE side)"),

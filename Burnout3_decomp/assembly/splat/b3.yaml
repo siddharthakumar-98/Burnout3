@@ -75,7 +75,7 @@ segments:
       - [0x030BF0, asm, d4/func_00130BF0]
       - [0x030C20, asm, game/unit_00130C20]
       - [0x031AA0, asm, d2/func_00131AA0]
-      - [0x031AC0, asm, game/unit_00131AC0]
+      - [0x031AC0, asm, d5/unit_00131AC0]
       - [0x031CE0, asm, d2/func_00131CE0]
       - [0x031D20, asm, game/unit_00131D20]
       - [0x034260, asm, game/unit_00134260]
