@@ -1,14 +1,23 @@
-# Public library references for D11
+# Existing solutions for PS2 dependency interfaces
 
-Research checked on 2026-10-08. The current goal is the matching C/C++ decompilation, including D11; the Rust
-rewrite is a deferred, long-term goal. These are candidate references, not dependencies or verified Burnout 3
-matches. No external library source was imported during this research.
+Research checked on 2026-10-08. The active goal is matching C/C++ reconstruction of Burnout 3's PS2 game source.
+Public completion tracks only objdiff's `game` category. D11 now supports dependency interfaces and selective reuse;
+full vendor-library reconstruction is optional, and the Rust rewrite is a deferred, long-term goal. These are
+candidate references, not imported dependencies or verified Burnout 3 matches.
 
 The retail ELF contains game code and statically linked vendor code. Both originated as source, but the vendor
 libraries were generally supplied to the studio as compiled archives. Recovering game source and reconstructing
-every library in the ELF are different amounts of work. This project's current Phase 1 gate includes both.
-Keeping a library in generated assembly preserves the matching build while work proceeds; it does not complete
-that library's source reconstruction.
+every library in the ELF are different amounts of work. The current Phase 1 gate requires the game's source and
+verified interfaces to its preserved dependencies. Keeping vendor libraries in generated assembly preserves the
+matching executable without requiring another engine/SDK decompilation. The complete objdiff report still retains
+the library categories for diagnostics, but they do not contribute to public game progress.
+
+## Default workflow: reuse existing knowledge
+
+For a game function that calls a library, first consult the references below for names, prototypes, structures,
+constants and algorithms. Confirm those details against Burnout 3's callers and data layout, then use them in the
+game C/C++ declarations. Preserve the vendor implementation. Only recover library internals when doing so saves
+game-source work; matching every library is not a prerequisite for finishing this PS2 milestone.
 
 ## Findings
 
@@ -98,7 +107,7 @@ a candidate for the codec portion of our Logitech category; neither reference co
 
 ## Applying these references
 
-Start with interface recovery for game callers, then test library candidates one unit at a time:
+Interface recovery is the default. If a source replacement would help, test it one unit at a time:
 
 1. Identify the Burnout 3 function and library revision from its code, callers, constants and data references.
 2. Compare the candidate's control flow, structure offsets, error paths and callees against our binary.
@@ -108,4 +117,5 @@ Start with interface recovery for game callers, then test library candidates one
 
 The vendor implementations are often C. Keep their C compilation and linkage where the binary requires it;
 our C/C++ decomp does not require rewriting every library as C++ classes. External source presence, name recovery
-and functional equivalence each help the work, but none alone counts as a matched function.
+and functional equivalence each help the work, but none alone counts as a matched function. Optional vendor
+matches do not add game-code progress, and native replacement engines are outside the current PS2 scope.

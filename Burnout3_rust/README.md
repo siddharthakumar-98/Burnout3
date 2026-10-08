@@ -7,7 +7,9 @@ decomp is complete. It keeps the original behavior exactly and uses idiomatic Ru
 gameplay. It is part of [Burnout3](../README.md), and its gameplay core (takedowns, boost, crash scoring) becomes the
 `burnout3-core` crate that GameMerge builds on.
 
-> **Status:** deferred; the current goal is the complete, verified C/C++ decomp. The only working piece is the ISO extractor. See
+> **Status:** deferred; the current goal is the verified PS2 game-source decomp with vendor libraries preserved.
+> Completing that milestone does not make the source natively portable or automatically start a rewrite.
+> The only working piece is the ISO extractor. See
 > [../ROADMAP.md](../ROADMAP.md) for the plan and [PLAN.md](PLAN.md) for disc findings.
 
 ## Supported build

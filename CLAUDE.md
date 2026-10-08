@@ -1,7 +1,10 @@
 # CLAUDE.md
 
-Matching C/C++ decomp of Burnout 3: Takedown (PS2, SLUS_210.50, SHA-1 `332be40d…`) is the current goal, including
-library reconstruction. A Rust rewrite is deferred as a long-term goal after the verified decomp.
+Matching C/C++ reconstruction of Burnout 3's PS2 game code (SLUS_210.50, SHA-1 `332be40d…`) is the current goal.
+Progress and completion use only objdiff's `game` category. Vendor libraries/runtime remain preserved assembly;
+full library reconstruction is optional and does not block the game-source gate. Use the existing sources and
+decomps in `Burnout3_decomp/docs/library-references.md` first for library names, types and algorithms. Any vendor
+source adopted into the matching build still needs its own 100% match. A Rust rewrite is a deferred, long-term goal.
 `ROADMAP.md` is the source of truth for plan and status; keep its Status table current. D4 work is tracked in
 `Burnout3_decomp/docs/d4.md` (subsystem map, unit boundaries, progress log, open questions).
 

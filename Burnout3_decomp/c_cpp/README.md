@@ -3,6 +3,10 @@
 The C/C++ side of the Burnout 3 decomp: source that CodeWarrior (`../compilers/3.0.1b119-040914/`) compiles into exactly
 the original bytes.
 
+The active completion scope is the game's `game` progress category. Vendor libraries stay in the matching assembly
+build; consult [existing library references](../docs/library-references.md) for names, types and algorithms before
+recovering an interface from scratch. Optional library matches use their own compiler and do not change game progress.
+
 | Path | What it is |
 |---|---|
 | `src/` | Decompiled C/C++ (`.c` or `.cpp`). Each file replaces the assembly unit with the same path under `../assembly/asm/`. |

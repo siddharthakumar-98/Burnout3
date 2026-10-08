@@ -6,7 +6,8 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** decompiling to C/C++ (D4: 66 functions linked, a tail of 7 near-misses left) · **Long-term goal:** Rust rewrite after the verified decomp
+> **Currently:** PS2 game-source C/C++ (78 / 5,654 functions matched; 66 linked; D4 has 7 near-misses) ·
+> **Dependencies:** preserved vendor assembly, with existing solutions guiding interfaces · **Long-term goal:** Rust rewrite
 
 | Phase | Milestone | State | Updated | Notes |
 |---|---|---|---|---|
@@ -15,19 +16,25 @@ the approach changes.
 | 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-08 | CodeWarrior **3.0.1 build 119** (decomp.me `3.0.1b119-040914`) at `-O4 -str readonly -Cpp_exceptions off`. Locked at 3.0.3 in D2; in D4 a sweep of all 19 `3.0.x` builds over every C function put b119 first or equal first on all of them, and it fixed D2's two near-misses and D3's `func_0027A900`. `-O4` over `-O3` settled by `ustrToUtf8` (99.9% vs 76.8%). The ELF's `2.4.1.01` stamp comes from a library object. See `Burnout3_decomp/docs/compiler.md`. |
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
 | 1 Decomp | D4 Core infrastructure | **in progress (tail)** | 2026-10-08 | Linked from C: file system (`d4/fs`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), pools, memory manager (`d4/memmgr`), UTF-16 formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files with the SHA-1 intact. In C but not linked yet, 7 near-misses: ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 2/5. Library functions named (libcdvd included), libcdvd callers classified, C++ conventions in `c_cpp/README.md`. Matching runs through one subagent at a time (`.claude/agents/decomp-matcher.md`). See `Burnout3_decomp/docs/d4.md`. |
-| 1 Decomp | D5–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
+| 1 Decomp | D5–D10 Game subsystems | not started | 2026-10-08 | Main loop, physics, gameplay, modes, AI and game-side presentation/platform integration; game-code category only |
+| 1 Decomp | D11 Dependency interfaces | ongoing supporting work | 2026-10-08 | Prefer existing library sources/decomps for names, types and behavior. Preserve vendor assembly; full library reconstruction is not a completion requirement. |
 | 2 Rust rewrite | R1–R6 | deferred; long-term goal | 2026-10-08 | Requires the verified Phase 1 decomp; not current work |
 
 ## Overview
 
 | Phase | Goal | Where |
 |---|---|---|
-| **1. Decompile Burnout 3** (active) | C/C++ source that CodeWarrior compiles into a byte-identical `SLUS_210.50` | `Burnout3_decomp/` |
+| **1. Decompile Burnout 3's PS2 game code** (active) | Matching game C/C++, linked with preserved dependencies into a byte-identical `SLUS_210.50` | `Burnout3_decomp/` |
 | **2. Rewrite Burnout 3 in Rust** (long-term goal) | A native Rust port of the finished decomp, with the same gameplay and assets from your disc | `Burnout3_rust/` |
 
-Phase 1 decompilation is the current project focus, including library reconstruction in D11. Phase 2 is a deferred,
-long-term goal and may start only after **all** of Phase 1 is done and verified. It ports from matched source, never
-from guesses.
+Phase 1 covers the game's source code, including its integration with rendering, audio, networking and devices.
+The public progress denominator is objdiff's `game` category; it currently contains 5,654 functions, 2,674,804 code
+bytes and 371 units. Vendor libraries/runtime (3,453 functions), startup assembly and VU microcode are preserved
+dependencies outside that metric. The full ELF must still match the original SHA-1.
+
+Use existing source, headers and decomps before recovering a vendor interface from scratch. Full library
+reconstruction is optional supporting work, not a gate. Phase 2 remains a deferred, long-term goal; game-source
+completion alone does not supply a native renderer, audio engine or platform layer.
 
 ### Related projects
 This repo is one of three. Dependencies point one way: this repo never depends on the others.
@@ -66,18 +73,21 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 
 ## Phase 1: Decompile Burnout 3 (active)
 
-**Goal:** every function in `SLUS_210.50` is C/C++ that the original compiler builds into the exact original bytes,
-and the rebuilt executable boots and plays in PCSX2 with your disc providing the assets.
+**Goal:** every function in objdiff's `game` category is matching C/C++, while the complete executable links with
+preserved vendor dependencies, reproduces the original bytes and boots and plays in PCSX2 with your disc providing
+the assets. Hand-written assembly and VU microcode remain assembly.
 
 **Where it stands:** the build pipeline is complete and byte-identical, the compiler is locked (D2) and the binary
-is mapped into libraries, sections and provisional translation units with their own data (D3). All but 12 functions
-are still splat-generated assembly; decompiling them to C (D4–D11) is the remaining work.
+is mapped into libraries, sections and provisional translation units with their own data (D3). The current report
+has 78 / 5,654 game functions in matching C/C++ (1.38%), covering 11,444 / 2,674,804 code bytes (0.43%). D4-D10
+recover the remaining game source; D11 supports the dependency interfaces rather than rebuilding every library.
 
 ### What the binary is
 - Disc `SYSTEM.CNF`: `BOOT2 = cdrom0:\SLUS_210.50;1`, `VER = 1.00`, NTSC. ISO SHA-1 `11a7f335a37d2f3f5c13b967f3072c84f8eded02`.
 - `SLUS_210.50` SHA-1 `332be40d6081b8b5055a6ea01194ad6ff662a863`. Stripped MIPS R5900 ELF, entry `0x100008`, with
   **one merged PT_LOAD** at `0x100000` (filesz `0x3E2680`, memsz `0x1DCEA00`) and `_gp = 0x4E8670` from `.reginfo`.
-- **Compiler:** `MW MIPS C Compiler (2.4.1.01)`, which is Metrowerks CodeWarrior for PS2.
+- **Game compiler:** CodeWarrior PS2 3.0.1 build 119 at the locked flags. The ELF's `2.4.1.01` stamp comes from a
+  library object; vendor code has multiple compiler families (see `docs/compiler.md`).
 - **Language and libraries:** C++ (MW-style RTTI) on top of RenderWare 3.6 (including the PS2 `sky2` driver),
   RenderWare Audio and Sony libsce.
 - **Recovered layout** (details in [Burnout3_decomp/docs/layout.md](Burnout3_decomp/docs/layout.md)):
@@ -133,7 +143,7 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | Diff and progress | objdiff (macOS GUI and CLI reports), asm-differ, decomp-permuter, decomp.me scratches |
 | First-draft C | Ghidra 12.1.x + ghidra-emotionengine-reloaded, driven through ghidra-mcp; m2c. `tools/ghidra_sync.py` mirrors the repo's functions, names (`config/symbol_addrs.txt`) and units into Ghidra. |
 | Runtime | PCSX2 2.x: `PCSX2 -elf build/SLUS_210.50 -- <ISO>` boots the rebuilt ELF with the disc inserted from the start. Debugger and PINE for spot checks. |
-| Reference | `librw` (open RenderWare 3.x reimplementation), the Reburn 3 forum (forum.mattkc.com), CodeBreaker addresses, and the tuning-menu labels compiled into the ELF. No proprietary SDKs are copied. |
+| Library references | Burnout 2's recovered PS2 RenderWare/audio/Logitech, ICO's Sony libraries/runtime, shared RenderWare 3.7 source, Persona 4's matching methods, plugin-sdk/librw, DirtySDK and upstream newlib/fdlibm/libgcc/Speex. Verify versions and call-site layouts before use; no proprietary SDKs are copied. |
 
 ### Milestones
 | ID | Milestone | Exit criterion | State |
@@ -141,34 +151,48 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | **D0** | Environment | Tools installed, image builds, ELF extracted and hashes verified, PCSX2 boots the ISO | **done** |
 | **D1** | Matching build | Section boundaries recovered. `ninja` builds `build/SLUS_210.50` entirely from generated assembly with SHA-1 `332be40d…`. | **done** |
 | D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files; compiler since refined to 3.0.1 b119 `-O4` (D4) |
-| D3 | Map the binary | libsce, runtime (MW runtime, newlib), RenderWare 3.6 and other libraries, and VU microcode labeled and fenced off. Game TU boundaries carved, `.data`/`.rodata` split. Progress reported per category (`game`/`rw`/`rwa`/`sce`/`runtime`/`ea`/`lg`). | **done**: one unit per library, 358 provisional game units, per-unit slices of all five data sections, `.lit4` pool handled for C units |
+| D3 | Map the binary | Libraries/runtime and VU microcode fenced off; game TU/data boundaries carved. Internal objdiff categories retain the complete binary; public completion tracks only `game`. | **done**: original library boundaries retained, per-unit data slices, `.lit4` pool handled for C units |
 | D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are matching C and linked, core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **in progress**: 66 functions linked; 7 near-misses left in ustring, heap, options, load queue |
 | D5 | Main loop and game flow | Boot, main loop, game state machine, mode/stage loading, frontend flow | |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
 | D7 | Gameplay rules | Boost economy, scoring, takedown detection and types, crash state machine, Impact Time, aftertouch, crash cameras | |
 | D8 | Game modes and progression | Race, Road Rage, Crash mode (pickups, multipliers, Crashbreaker), Eliminator, Burning Lap, Face-Off, World Tour, save data | |
 | D9 | AI, traffic, camera | Racer AI and arbitration, traffic, follow/bumper/replay cameras | |
-| D10 | Presentation and platform | Game-side rendering, deformation, particles, audio (RW Audio, EA Trax), frontend UI, video, memory card, network (DirtySock) | |
-| D11 | Libraries | MW runtime, newlib libc/libm, libsce, RenderWare 3.6, RenderWare Audio, EA DirtySock, Logitech libraries. All but the MW runtime and RenderWare Audio are ee-gcc output and need a matching GCC. Hand-written asm and VU microcode stay as asm, as in the original source. | |
-| **Gate** | Phase 1 complete | 100% of functions in C and matching, the build reproduces the SHA-1, and every check under [Testing Phase 1](#testing-phase-1) passes | |
+| D10 | Presentation and platform integration | Game-side rendering, deformation, particles, audio/EA Trax integration, frontend UI, video, memory-card, network and device callers. Preserve middleware internals. | |
+| D11 | Dependency interfaces and reuse | Verify names, prototypes, structures and behavior needed by game callers using existing solutions. Keep vendor assembly unless a useful replacement matches under its own toolchain; full vendor decomp is optional. | ongoing supporting work |
+| **Gate** | PS2 game-source decomp complete | 100% of `game` functions matching and their units linked, the full ELF reproduces the original SHA-1, dependency interfaces are verified for game callers, and [Testing Phase 1](#testing-phase-1) passes. No vendor-library matching quota. | |
 
-Work runs infrastructure first, then gameplay, then presentation, then libraries. Headers and struct layouts grow
-outward from core code. Within a milestone, work goes one translation unit at a time, smallest functions first.
+Work runs infrastructure first, then gameplay, then game-side presentation/platform integration. D11 supports
+each stage as its callers need library interfaces. Headers and structures grow outward from core code; work one
+translation unit at a time, smallest functions first.
 
-Public source and decompilation candidates for D11 are recorded in
-[library references](Burnout3_decomp/docs/library-references.md). Existing vendor code can guide recovery, but
-every adopted function still needs to match this binary under its own library toolchain.
+### Prefer existing dependency solutions
+
+The evidence and exact limitations are in [library references](Burnout3_decomp/docs/library-references.md).
+
+| Dependency | First references to inspect | Use in this milestone |
+|---|---|---|
+| RenderWare graphics | [Burnout 2](https://github.com/b3dllc/burnout2) (3.4 PS2 sky2), [3.7 source](https://github.com/sigmaco/rwsrc-v3.7.0.2), [Persona 4](https://github.com/Raikaru/Persona4-Decompilation), [plugin-sdk](https://github.com/DK22Pac/plugin-sdk), [librw](https://github.com/aap/librw) | Recover 3.6 interfaces from headers and compare shared algorithms/driver behavior. No complete verified PS2 3.6 engine was found. |
+| RenderWare Audio | [Burnout 2's audio/RPC reconstruction](https://github.com/b3dllc/burnout2/tree/master/src/rwsdk/rwaudio) | Use EE/SPU2 and object/stream references to understand game callers; distinguish implemented bodies from stubs. |
+| Sony libsce/runtime | [ICO](https://github.com/nathanialf/ico), [PS2SDK](https://github.com/ps2dev/ps2sdk), original newlib/fdlibm/libgcc | Start from reconstructed library bodies, upstream algorithms and API records. Verify our newer SDK layouts. |
+| EA DirtySock | [partial 4.7.0/5.6.2](https://github.com/deadbeef7/DirtySDK), [7.5.3 source](https://github.com/kitsilanosoftware/DirtySDK) | Reuse transport/protocol knowledge; identify Burnout 3's exact version and PS2 RPC differences. |
+| Logitech devices/codecs | [Burnout 2 lgdevPS2.c](https://github.com/b3dllc/burnout2/blob/master/src/gamesource/toolkits/lgdevPS2.c), [Speex](https://www.speex.org/downloads/) | Start from recovered device/RPC structures and codec algorithms; headset and keyboard/mouse coverage is incomplete. |
+
+For each needed interface: inspect these references, confirm prototypes and offsets against our game callers,
+record the evidence, and leave the vendor implementation in preserved assembly. Only attempt library source
+matching when it saves game-source effort. An optional adopted library function still needs the correct compiler,
+100% byte matching and the full-ELF hash check; its match does not add game-code progress.
 
 ### Risks and open questions
 | Risk / question | Mitigation |
 |---|---|
-| Libraries weren't built with CodeWarrior | RenderWare, libsce, DirtySock and Logitech code is ee-gcc output and the MW runtime came from an older CodeWarrior. Matching them (D11) needs those compilers; until then they stay assembly. |
+| Vendor versions and compilers differ from references | Preserve their original assembly; use existing work to verify game-call interfaces. Full vendor reconstruction is outside the gate. Optional source matches require the library's own compiler and flags. |
 | Is b119 the exact compiler? | The build is between b103 (loses `func_0013AE70`) and b145 (loses `ustrncat`/`ustrncpy`); b119 is the closest available and matches everything matched so far, including D2's former near-misses. Revisit if a tail function resists every source form. |
 | Section and TU boundaries had to be inferred from one merged segment | Recovered in D3 from compiler fingerprints, link order in `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`, version tags, `$Id` strings, vtables and static initializers; every object links at its original address. Game units are provisional and get merged or split as decompiling uncovers files. |
 | GNU ld standing in for the MW linker | Match the load segment, then rebuild the container in `tools/elf.py`. Already proven in D1. |
 | R5900-specific code (MMI, VU0 macro, 128-bit loads/stores) | Keep it as inline asm where the original most likely was. Hand-decompile the rest. |
 | C++ under CodeWarrior (mangling, vtables, inlining order) | Lock patterns in D2. Recover class layouts from RTTI strings. |
-| Scale: about 3.9 MB of code and data | Order by value, track progress, use decomp.me and permuter |
+| Scale: 2,674,804 game-code bytes in the current report | Prioritize game source, reuse library knowledge and track only `game` progress. Keep the complete binary report for diagnostics. |
 | Whether public CI should verify matching | Open. Options: local-only, or a private runner holding your ELF. |
 
 ---
@@ -183,7 +207,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 | Check | How | State |
 |---|---|---|
 | SHA-1 match | `tools/dock ninja` prints `build/SLUS_210.50: 332be40d… OK` and fails otherwise | **passing** |
-| Clean rebuild | Delete `asm/ assets/ build/ build.ninja orig/SLUS_210.50.rom`, then `tools/dock python3 configure.py && tools/dock ninja` | **passing** |
+| Clean rebuild | Build in a fresh scratch clone with the supplied ELF/compiler, then run `tools/dock python3 configure.py` and `tools/dock ninja`; preserve generated files in the working checkout. | **passing** |
 | Byte comparison | `cmp build/SLUS_210.50 orig/SLUS_210.50` reports no differences | **passing** |
 | Fresh-clone build | Follow [Burnout3_decomp/README.md](Burnout3_decomp/README.md) from a fresh clone with only the ISO present | **passing** (2026-10-06: a fresh clone with only the ELF and compiler added builds byte-identical and regenerates identical progress files; the ELF was copied in, not re-extracted from the ISO) |
 | Nothing derived is tracked | `git status --ignored` shows `orig/`, `asm/`, `assets/`, `build/`, `compilers/` ignored, and `git ls-files` lists no binaries | **passing** |
@@ -197,9 +221,9 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 ### 3. Each decompiled function matches
 | Check | How | State |
 |---|---|---|
-| Per function | objdiff shows 100% for every function moved from assembly to C | **passing** (12 of 12 linked functions) |
-| Progress | `tools/dock python3 tools/progress.py` runs `objdiff-cli report` and writes `Burnout3_decomp/PROGRESS.md` per category, plus the README's progress map and badge | **passing** |
-| No regressions | The SHA-1 check stays green after every function lands. A function that doesn't match stays in assembly. | **passing** (SHA-1 matches with all 12 linked from C, including a C-compiled jump table in `.rodata` and two pooled float literals) |
+| Per function | objdiff shows 100% for each game function accepted as matched; a whole unit must match before linking | **passing** (78 game functions matched in the current report) |
+| Progress | `tools/dock python3 tools/progress.py` writes a game-only table, map and badge; changing vendor counts must not change these metrics | **passing** |
+| No regressions | The full-ELF SHA-1 stays green after every unit lands, including the preserved vendor code | **passing** (current build matches the original) |
 
 ### 4. It runs like the original
 All of these run the rebuilt `build/SLUS_210.50` (no `.elf` extension; `build/SLUS_210.50.elf` is an unfinished
@@ -221,18 +245,25 @@ In `~/Library/Application Support/PCSX2/logs/emulog.txt`, `Serial: SLUS-21050` m
 | Save data | A memory-card save from the original loads in the rebuilt build, and the reverse | to do |
 | Side by side | The same savestate and input recording in the original and the rebuilt ELF give the same RAM at fixed frames (compared over PINE) | to do |
 
-**Phase 1 is verified** when every check above passes with 100% of functions in C.
+**The PS2 game-source milestone is verified** when every check above passes, all `game` functions match from C/C++
+and their units are linked, and the dependency interfaces used by game code are verified. Vendor libraries may
+remain original assembly. Their reconstruction is not part of the completion denominator.
 
 ---
 
 ## Phase 2: Rewrite Burnout 3 in Rust (long-term goal)
 
 **Goal:** a native Rust version of Burnout 3, in `Burnout3_rust/`, that plays the same as the original. It loads assets
-from your ISO at runtime and is ported from the finished, verified decomp. It uses idiomatic Rust wherever that
+from your ISO at runtime and is ported from verified game source. It uses idiomatic Rust wherever that
 doesn't change gameplay.
 
 **Status:** deferred. The verified Phase 1 decomp is a prerequisite; passing its gate does not automatically start
-the rewrite.
+the rewrite. Preserved PS2 vendor code still needs native replacements or platform shims; this is a separate
+future scope, not a requirement of the current decomp. Prefer existing rendering/audio/input solutions when that
+work is explicitly started.
+
+<details>
+<summary>Deferred Rust rewrite planning</summary>
 
 ### Tooling and structure
 | Crate / tool | Role |
@@ -244,7 +275,7 @@ the rewrite.
 | `platform` | wgpu renderer, cpal audio, gilrs input, and disc/asset file system. **Contains nothing Burnout-specific.** |
 | `burnout3` | The thin app binary that wires `burnout3-core`, `rw` and `platform` together |
 | `tools/iso_extract` | Already exists. Used as a library so assets stream straight from your ISO. |
-| C oracle | The matched decomp compiled natively (clang via the `cc` crate, behind a platform shim) and called from Rust tests |
+| C oracle | Matched game functions compiled natively only after their PS2 interfaces, pointer layouts and dependencies have suitable shims, then called from Rust tests |
 | PCSX2 + PINE | Golden per-frame state traces from the matched ELF, using savestates and input recordings |
 
 ### Crate boundaries (decide before R1)
@@ -303,6 +334,8 @@ are preserved exactly.**
 - Renderer parity (VU1 lighting, skinning, deformation) can only be judged by screenshot.
 - Open: platforms beyond macOS (wgpu keeps Windows and Linux possible).
 
+</details>
+
 ---
 
 ## What other projects need from this repo
@@ -317,5 +350,5 @@ roadmap tracks those dependencies. This table exists so that the order of work h
 | `burnout3-core` with the step API and puppet cars | R3 | Track B (native Rust) |
 | Crash mode in `burnout3-core` | R4 | Track B |
 
-None of this changes the decomp's own order of work (infrastructure → gameplay → presentation → libraries). It only
+None of this changes the decomp's own order of work (infrastructure → gameplay → game-side presentation/platform). It only
 matters when choosing between two units of similar value.

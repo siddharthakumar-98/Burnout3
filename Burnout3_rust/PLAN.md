@@ -2,8 +2,9 @@
 
 ## Context
 This file records what is on the Burnout 3: Takedown disc and the asset formats the Rust rewrite has to read. The
-plan and status live in [../ROADMAP.md](../ROADMAP.md): first a byte-matching C/C++ decomp in
-[../Burnout3_decomp](../Burnout3_decomp) (Stage A1), then this Rust rewrite from the finished decomp (Stage B1).
+plan and status live in [../ROADMAP.md](../ROADMAP.md): the current milestone is byte-matching PS2 game-source C/C++
+in [../Burnout3_decomp](../Burnout3_decomp), with vendor libraries preserved. This Rust rewrite is a deferred,
+long-term goal and requires a separate plan for replacing PS2 dependencies before native execution.
 
 The source disc is `~/Desktop/ps2_games/Burnout 3 - Takedown (USA).iso`. Nothing from it is committed.
 
