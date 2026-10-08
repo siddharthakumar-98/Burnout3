@@ -6,7 +6,8 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** PS2 game-source C/C++ (78 / 5,654 functions matched; 66 linked; D4 has 6 near-misses) ·
+> **Currently:** PS2 game-source C/C++: 78 / 5,654 game functions match (66 of them linked; the rest sit in units
+> that link once their last near-misses match). D4 done with a tail of 6; D5 next, starting with Burnout 2 mapping ·
 > **Dependencies:** preserved vendor assembly, with existing solutions guiding interfaces · **Long-term goal:** Rust rewrite
 
 | Phase | Milestone | State | Updated | Notes |
@@ -15,8 +16,9 @@ the approach changes.
 | 1 Decomp | D1 Matching build | **done** | 2026-10-05 | `tools/dock ninja` rebuilds `SLUS_210.50` byte-identical from splat assembly (8,948 functions, symbolic relocations). The rebuilt ELF boots in PCSX2 to the menu and into a race. |
 | 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-08 | CodeWarrior **3.0.1 build 119** (decomp.me `3.0.1b119-040914`) at `-O4 -str readonly -Cpp_exceptions off`. Locked at 3.0.3 in D2; in D4 a sweep of all 19 `3.0.x` builds over every C function put b119 first or equal first on all of them, and it fixed D2's two near-misses and D3's `func_0027A900`. `-O4` over `-O3` settled by `ustrToUtf8` (99.9% vs 76.8%). The ELF's `2.4.1.01` stamp comes from a library object. See `Burnout3_decomp/docs/compiler.md`. |
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
-| 1 Decomp | D4 Core infrastructure | **in progress (tail)** | 2026-10-08 | Linked from C: file system (`d4/fs`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), pools, memory manager (`d4/memmgr`), UTF-16 formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files with the SHA-1 intact. In C but not linked yet, 6 near-misses: ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 3/5. Burnout 2's DWARF-named decomp (`Burnout3_decomp/docs/burnout2.md`) matches every D4 unit checked; the pool, file system and load queue now use Criterion's names (`GtLList`, `CGTFileSystem`, `CAsyncLoadManager`). Library functions named (libcdvd included), libcdvd callers classified, C++ conventions in `c_cpp/README.md`. Matching runs through one subagent at a time (`.claude/agents/decomp-matcher.md`). See `Burnout3_decomp/docs/d4.md`. |
-| 1 Decomp | D5–D10 Game subsystems | not started | 2026-10-08 | Main loop, physics, gameplay, modes, AI and game-side presentation/platform integration; game-code category only |
+| 1 Decomp | D4 Core infrastructure | **done (tail: 6)** | 2026-10-08 | All planned D4 work is in C: file system (`CGTFileSystem`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), link pool (`GtLList`), memory manager (`d4/memmgr`), load queue (`CAsyncLoadManager`), UTF-16 strings and formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files linked with the SHA-1 intact. Tail (see [tail policy](#tail-policy)): ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 3/5. Burnout 2's DWARF-named decomp (`Burnout3_decomp/docs/burnout2.md`) matched every D4 unit checked, which gave Criterion's names. Library functions named, libcdvd callers classified, C++ conventions in `c_cpp/README.md`. See `Burnout3_decomp/docs/d4.md`. |
+| 1 Decomp | D5 Main loop and game flow | **next** | 2026-10-08 | Starts with `tools/bo2map.py` (Burnout 3 ↔ Burnout 2 function mapping, spec first), then the game-mode classes (`CGameMode` and subclasses; `gamemode.cpp` already at 8/9) |
+| 1 Decomp | D6–D10 Game subsystems | not started | 2026-10-08 | Physics, gameplay, modes, AI and game-side presentation/platform integration; game-code category only |
 | 1 Decomp | D11 Dependency interfaces | ongoing supporting work | 2026-10-08 | Prefer existing library sources/decomps for names, types and behavior. Preserve vendor assembly; full library reconstruction is not a completion requirement. |
 | 2 Rust rewrite | R1–R6 | deferred; long-term goal | 2026-10-08 | Requires the verified Phase 1 decomp; not current work |
 
@@ -56,7 +58,7 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 - Publishing decompiled code carries some legal risk. The project accepts it, follows the usual decomp-community
   practice above, keeps trademark and no-affiliation notices, and honors takedown requests.
 
-### Machine state (2026-10-05)
+### Machine state (2026-10-08)
 | Item | State | Action needed |
 |---|---|---|
 | Burnout 3 ISO | `~/Desktop/ps2_games/Burnout 3 - Takedown (USA).iso`, hash verified | — |
@@ -65,7 +67,7 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 | PINE | Off (`EnablePINE = false`, slot 28011) | Enable for Phase 2 trace capture |
 | Docker | Image `b3-build` (linux/amd64: binutils 2.42, wibo 1.2.0, objdiff-cli 3.8.2, splat 0.50.0) | — |
 | Rust | rustc 1.99 stable via Homebrew `rustup` (`/opt/homebrew/opt/rustup/bin`, on `PATH` via `~/.zshrc`) | — |
-| Ghidra | 12.1.4 + OpenJDK 21 (Homebrew), ghidra-emotionengine-reloaded v2.1.38 enabled. Project `Burnout3_decomp` (outside the repo, in `~/Desktop/Ghidra/`) has `SLUS_210.50` imported as `r5900:LE:32:default`, with `gp = 0x4E8670`, a `bss` block `0x4E2680`–`0x1ECE9FF`, and `SECTION4` split into `0x100000`–`0x469DFF` (code), `vu_microcode` `0x469E00`–`0x483EFF` (not executable) and `data` `0x483F00`–`0x4E267F`. ghidra-mcp v7.0.0 (bethington) serves it on port 8089; `tools/ghidra_sync.py` keeps it in step with the repo. Turn off **Strict Naming Enforcement** (Edit > Tool Options > GhidraMCP HTTP Server) so library names and struct fields aren't rejected or prefixed. | — |
+| Ghidra | 12.1.4 + OpenJDK 21 (Homebrew), ghidra-emotionengine-reloaded v2.1.38 enabled. Project `Burnout3_decomp` (outside the repo, in `~/Desktop/Ghidra/`) has `SLUS_210.50` imported as `r5900:LE:32:default`, with `gp = 0x4E8670`, a `bss` block `0x4E2680`–`0x1ECE9FF`, and `SECTION4` split into `0x100000`–`0x469DFF` (code), `vu_microcode` `0x469E00`–`0x483EFF` (not executable) and `data` `0x483F00`–`0x4E267F`. ghidra-mcp v7.0.0 (bethington) serves it on port 8089; `tools/ghidra_sync.py` keeps it in step with the repo, and matcher agents read it through the read-only `tools/ghidra_read.py` (plain HTTP, no MCP schemas). Turn off **Strict Naming Enforcement** (Edit > Tool Options > GhidraMCP HTTP Server) so library names and struct fields aren't rejected or prefixed. | — |
 | Decomp helpers | Python venv at `Burnout3_decomp/.venv`, objdiff GUI and m2c in `Burnout3_decomp/tools/bin/` (gitignored) | — |
 | Compiler | `Burnout3_decomp/compilers/3.0.1b119-040914/` (gitignored) is the build in use. The other decomp.me PS2 builds sit beside it for comparison (`2.3.3`, `2.4.0-build0017`, `3.0`, `3.0.1`, `3.0.3`, and the 2003–2006 `3.0`/`3.0.1` builds). All run under wibo. | — |
 
@@ -79,8 +81,9 @@ the assets. Hand-written assembly and VU microcode remain assembly.
 
 **Where it stands:** the build pipeline is complete and byte-identical, the compiler is locked (D2) and the binary
 is mapped into libraries, sections and provisional translation units with their own data (D3). The current report
-has 78 / 5,654 game functions in matching C/C++ (1.38%), covering 11,444 / 2,674,804 code bytes (0.43%). D4-D10
-recover the remaining game source; D11 supports the dependency interfaces rather than rebuilding every library.
+has 78 / 5,654 game functions in matching C/C++ (1.38%), covering 11,444 / 2,674,804 code bytes (0.43%). D4 (core
+infrastructure) is done apart from a recorded tail of 6 near-misses. D5-D10 recover the remaining game source, with
+Burnout 2's DWARF-named decomp supplying Criterion's names and layouts wherever the code is shared; D11 supports the dependency interfaces rather than rebuilding every library.
 
 ### What the binary is
 - Disc `SYSTEM.CNF`: `BOOT2 = cdrom0:\SLUS_210.50;1`, `VER = 1.00`, NTSC. ISO SHA-1 `11a7f335a37d2f3f5c13b967f3072c84f8eded02`.
@@ -118,10 +121,12 @@ c_cpp/                    the C/C++ side
   src/                    decompiled C/C++; each file replaces the asm unit with the same path
   include/                shared headers
 configure.py              one combined build: extracts, splits, assembles, compiles (C_UNITS, CFLAGS), links
-tools/funcmatch.py        compares one function with the original under chosen flags or compiler
+tools/funcmatch.py        compares functions with the original: one, every function in a file (--all), or source variants (--variants)
 tools/litfix.py           points a C object's float literals at the original's pooled .lit4 entries
 tools/xref.py             cross-references, compiler fingerprints and strings, for mapping the binary
 tools/ghidra_sync.py      keeps the Ghidra project's functions, names and unit tags in step with the repo
+tools/ghidra_read.py      read-only Ghidra queries (decompilation, callers/callees, refs) for matcher agents
+tools/vdbhash.py          Data/vdb.xml format and key hash; checks the code's key names against your own copy
 tools/tusplit.py          proposes game translation-unit boundaries and writes the .text block of b3.yaml
 tools/dataslice.py        cuts .data/.rodata/.sdata/.sbss/.bss into per-unit slices and writes that block of b3.yaml
 tools/progress.py         writes PROGRESS.md, progress_map.svg and progress.json from objdiff's report
@@ -130,9 +135,11 @@ config/                   symbol names, relocation overrides, extra linker scrip
 tools/elf.py              hash-checked extraction and exact ELF container rebuild
 tools/dock                runs a command in the build container
 docker/Dockerfile         linux/amd64 build image
-docs/                     layout and reverse-engineering notes
+docs/                     layout.md, compiler.md, d4.md (milestone log), burnout2.md (Burnout 2 mapping),
+                          library-references.md (dependency references)
 orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 ```
+The matcher agent's instructions are in `.claude/agents/decomp-matcher.md` at the repo root.
 
 ### Tooling
 | Purpose | Tool |
@@ -141,7 +148,9 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | Assemble and link | GNU binutils (`mips-linux-gnu-as -march=r5900`, `ld`, `objcopy`). `tools/elf.py rebuild` wraps the linked segment in the original ELF container. |
 | Split and disassemble | splat (`platform: ps2`, `compiler: MWCCPS2`) and spimdisasm (R5900: MMI, `lq`/`sq`, VU0 macro ops) |
 | Diff and progress | objdiff (macOS GUI and CLI reports), asm-differ, decomp-permuter, decomp.me scratches |
-| First-draft C | Ghidra 12.1.x + ghidra-emotionengine-reloaded, driven through ghidra-mcp; m2c. `tools/ghidra_sync.py` mirrors the repo's functions, names (`config/symbol_addrs.txt`) and units into Ghidra. |
+| First-draft C | Burnout 2's counterpart, when there is one (see [Method per unit](#method-per-unit)); then Ghidra 12.1.x + ghidra-emotionengine-reloaded (read by agents through `tools/ghidra_read.py`) and m2c. `tools/ghidra_sync.py` mirrors the repo's functions, names (`config/symbol_addrs.txt`) and units into Ghidra. |
+| Game-code reference | [b3dllc/burnout2](https://github.com/b3dllc/burnout2): Burnout 2's August 2002 beta, decompiled from full DWARF debug info (2,311 named functions with signatures and source files, about 1,000 types with offsets, 249 classes), built with CodeWarrior 3.0.1. Mapping and results in [docs/burnout2.md](Burnout3_decomp/docs/burnout2.md). Its `docs/mwcc-*-model.md` notes model CodeWarrior's register allocator and scheduler. |
+| Matching | One `decomp-matcher` subagent at a time (`.claude/agents/decomp-matcher.md`): at most about 8 functions per run, an 8-attempt time-box per function, `funcmatch.py --variants` to try several source forms per turn. The main session orchestrates (boundaries, carving, names, linking, docs) and doesn't match functions itself. |
 | Runtime | PCSX2 2.x: `PCSX2 -elf build/SLUS_210.50 -- <ISO>` boots the rebuilt ELF with the disc inserted from the start. Debugger and PINE for spot checks. |
 | Library references | Burnout 2's recovered PS2 RenderWare/audio/Logitech, ICO's Sony libraries/runtime, shared RenderWare 3.7 source, Persona 4's matching methods, plugin-sdk/librw, DirtySDK and upstream newlib/fdlibm/libgcc/Speex. Verify versions and call-site layouts before use; no proprietary SDKs are copied. |
 
@@ -152,19 +161,35 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 | **D1** | Matching build | Section boundaries recovered. `ninja` builds `build/SLUS_210.50` entirely from generated assembly with SHA-1 `332be40d…`. | **done** |
 | D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files; compiler since refined to 3.0.1 b119 `-O4` (D4) |
 | D3 | Map the binary | Libraries/runtime and VU microcode fenced off; game TU/data boundaries carved. Internal objdiff categories retain the complete binary; public completion tracks only `game`. | **done**: original library boundaries retained, per-unit data slices, `.lit4` pool handled for C units |
-| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are matching C and linked, core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **in progress**: 66 functions linked; 6 near-misses left in ustring, heap, options, load queue |
-| D5 | Main loop and game flow | Boot, main loop, game state machine, mode/stage loading, frontend flow | |
+| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are in C with at most a recorded tail ([tail policy](#tail-policy)), core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **done (tail: 6)**: 66 functions linked; ustring, heap, options and load queue wait on 6 near-misses |
+| D5 | Main loop and game flow | Starts with `tools/bo2map.py`, which proposes Burnout 3 ↔ Burnout 2 function pairs from order, size, callees and strings. Then boot, main loop, game state machine (`CGameMode` and its subclasses), mode/stage loading, frontend flow. | **next** |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
 | D7 | Gameplay rules | Boost economy, scoring, takedown detection and types, crash state machine, Impact Time, aftertouch, crash cameras | |
 | D8 | Game modes and progression | Race, Road Rage, Crash mode (pickups, multipliers, Crashbreaker), Eliminator, Burning Lap, Face-Off, World Tour, save data | |
 | D9 | AI, traffic, camera | Racer AI and arbitration, traffic, follow/bumper/replay cameras | |
 | D10 | Presentation and platform integration | Game-side rendering, deformation, particles, audio/EA Trax integration, frontend UI, video, memory-card, network and device callers. Preserve middleware internals. | |
 | D11 | Dependency interfaces and reuse | Verify names, prototypes, structures and behavior needed by game callers using existing solutions. Keep vendor assembly unless a useful replacement matches under its own toolchain; full vendor decomp is optional. | ongoing supporting work |
-| **Gate** | PS2 game-source decomp complete | 100% of `game` functions matching and their units linked, the full ELF reproduces the original SHA-1, dependency interfaces are verified for game callers, and [Testing Phase 1](#testing-phase-1) passes. No vendor-library matching quota. | |
+| **Gate** | PS2 game-source decomp complete | 100% of `game` functions matching and their units linked (no tail left), the full ELF reproduces the original SHA-1, every vendor function called from game C has a named prototype in `c_cpp/include/` checked against its call sites, and [Testing Phase 1](#testing-phase-1) passes. No vendor-library matching quota. | |
 
 Work runs infrastructure first, then gameplay, then game-side presentation/platform integration. D11 supports
 each stage as its callers need library interfaces. Headers and structures grow outward from core code; work one
 translation unit at a time, smallest functions first.
+
+### Tail policy
+Most functions match within a few attempts; a small tail resists (register swaps, delay slots, loop entry). A
+milestone closes when all its units are in C and at most 10 functions remain short of 100%, each recorded with its
+best % and lead in the milestone's log. Units with a tail function stay in assembly until it matches. Tail runs,
+batched across milestones, clear them later. The Phase 1 gate still requires 100%: nothing is left behind, it is
+only scheduled differently.
+
+### Method per unit
+1. **Boundaries:** confirm the unit in Ghidra (`ghidra_read.py fn <addrs> callers,callees,refs`) before any work.
+2. **Burnout 2 first:** find the counterpart in Burnout 2 (by function order, size, callees, strings and
+   constants). Where it exists, take Criterion's class, method and field names and its layout, and give its body
+   to the matcher as a draft. Burnout 3 changes some layouts (the load queue grew from 16 to 24 requests, the pool
+   struct shrank), so check every offset against the assembly.
+3. **Match:** one matcher run per unit (≤8 functions), then carve, name (mangled C++ names in `symbol_addrs.txt`),
+   link, check the SHA-1, regenerate progress and record results in the milestone's log.
 
 ### Prefer existing dependency solutions
 
@@ -191,7 +216,9 @@ matching when it saves game-source effort. An optional adopted library function 
 | Section and TU boundaries had to be inferred from one merged segment | Recovered in D3 from compiler fingerprints, link order in `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`, version tags, `$Id` strings, vtables and static initializers; every object links at its original address. Game units are provisional and get merged or split as decompiling uncovers files. |
 | GNU ld standing in for the MW linker | Match the load segment, then rebuild the container in `tools/elf.py`. Already proven in D1. |
 | R5900-specific code (MMI, VU0 macro, 128-bit loads/stores) | Keep it as inline asm where the original most likely was. Hand-decompile the rest. |
-| C++ under CodeWarrior (mangling, vtables, inlining order) | Lock patterns in D2. Recover class layouts from RTTI strings. |
+| C++ under CodeWarrior (mangling, vtables, inlining order) | Patterns settled in D2/D4 (`c_cpp/README.md`). Class names, methods and layouts come from Burnout 2's debug info where the code is shared, otherwise from RTTI strings and the code. |
+| Burnout 2 is a draft, not an answer | Burnout 3 changed some layouts and signatures, and Burnout 2's own decomp is about 70% matching. Check every offset and signature against Burnout 3's assembly; only Burnout 3's bytes decide. |
+| The tail grows with every milestone | Tail policy above: record, schedule tail runs, use Burnout 2's bodies and its CodeWarrior codegen notes as leads. |
 | Scale: 2,674,804 game-code bytes in the current report | Prioritize game source, reuse library knowledge and track only `game` progress. Keep the complete binary report for diagnostics. |
 | Whether public CI should verify matching | Open. Options: local-only, or a private runner holding your ELF. |
 
@@ -349,6 +376,9 @@ roadmap tracks those dependencies. This table exists so that the order of work h
 | Car slots and the race/mode state machine | D6, D8 | Track A |
 | `burnout3-core` with the step API and puppet cars | R3 | Track B (native Rust) |
 | Crash mode in `burnout3-core` | R4 | Track B |
+
+Track B is on hold while Phase 2 is deferred. Track A is unaffected, and Burnout 2's names reach it early: the
+gameplay classes it needs exist in Burnout 2 with Criterion's names.
 
 None of this changes the decomp's own order of work (infrastructure → gameplay → game-side presentation/platform). It only
 matters when choosing between two units of similar value.

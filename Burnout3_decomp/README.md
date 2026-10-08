@@ -9,7 +9,7 @@ The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech
 useful matches; full vendor-library reconstruction is outside the game-source completion gate. Game assets are
 never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing them.
 
-> **Status:** D4 (core infrastructure) in its tail. The compiler is identified (CodeWarrior 3.0.1 build 119,
+> **Status:** D4 (core infrastructure) done apart from a tail of 6 near-misses; D5 next. The compiler is identified (CodeWarrior 3.0.1 build 119,
 > `-O4 -str readonly -Cpp_exceptions off`), and 66 functions in 21 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
 > the game progress category contains 371 units including C carves and static initializers. Each unit has its own
