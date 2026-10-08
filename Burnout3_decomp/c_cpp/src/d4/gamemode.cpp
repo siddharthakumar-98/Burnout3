@@ -209,6 +209,6 @@ void func_0013CDD0(GameModeC940 *self)
     }
 }
 
-/* loadQueueCancel (0x13CE20) onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
+/* CAsyncLoadManager::Abort (0x13CE20) onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
 
 }

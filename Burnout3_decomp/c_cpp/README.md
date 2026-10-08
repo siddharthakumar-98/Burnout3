@@ -64,6 +64,11 @@ compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
   (`src/d4/valuedb.cpp`); `tools/dataslice.py` cuts `.vtables` into one `<unit>_vt` slice per unit.
 - **Externs reached with `lui`.** A global the original reaches with `lui`/`addiu` (not `$gp`) must be declared as
   an incomplete array (`extern u8 D_004EE040[];`), otherwise CodeWarrior assumes small data and uses `$gp`.
+- **Criterion's names.** Where Burnout 2's debug info has the same class or function ([docs/burnout2.md](../docs/burnout2.md)),
+  use its names: real C++ classes and member functions, mangled names in `symbol_addrs.txt` taken from what our
+  declarations compile to. Inside a member function use `this` and members directly: a local alias
+  (`CGTFileSystem *dev = this;`) changed register allocation (`CGTFileSystem::Init`, 94.9% until removed). `long` is
+  64-bit here, so a Burnout 2 signature with `long` may need `s32`.
 - **Address order.** Functions (and data) in a file are defined in address order: the object's order is the link
   order. `funcmatch.py` can't see a wrong order; only the SHA-1 check can.
 - **Relocation-only differences.** An objdiff score under 100% that differs only in relocation names (jump tables
@@ -73,15 +78,15 @@ compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
 
 | Source | Unit (start) | What | Status |
 |---|---|---|---|
-| `src/d4/pool.c` | `0x2B6C40` | fixed-size block pools | 8/8, linked |
+| `src/d4/pool.cpp` | `0x2B6C40` | Criterion's `GtLList` link pool | 8/8, linked |
 | `src/d4/vdb.cpp` | `0x21B8C0` | value registry (`VdbRegistry`), CRC table | 8/8, linked |
 | `src/d4/valuedb.cpp` | `0x24FDE0` | tuning database (`Data/vdb.xml`), vtable from C | 6/6, linked |
-| `src/d4/fs.cpp` | `0x212580` | file system with devices, RenderWare file interface | 18/18, linked |
+| `src/d4/fs.cpp` | `0x212580` | Criterion's `CGTFileSystem`/`CGTFile`, RenderWare file interface | 18/18, linked |
 | `src/d4/ustrfmt.c` | `0x212E30` | UTF-16 `%N` substitution | 2/2, linked |
 | `src/d4/ustring.c` | `0x2130F0` (carved) | UTF-16 strings | 12/14 |
 | `src/d4/heap.c` | `unit_003E7850`, `_003E7AD0`, `_003E7D40` | heap core (slot table) | 9/13 |
 | `src/d4/options.cpp` | `unit_0021B5E0` | options | 4/5 |
 | `src/d4/memmgr.cpp` | `0x222300` | memory manager (the heap object's vtable), arena layout | 7/7, linked |
-| `src/d4/loadqueue.cpp` | `unit_0013CE20` | asynchronous load queue | 2/5 |
+| `src/d4/loadqueue.cpp` | `unit_0013CE20` | Criterion's `CAsyncLoadManager` | 3/5 |
 | `src/d4/func_00130BF0.c`, `func_001AB010.c` | `0x130BF0`, `0x1AB010` | first VU0 functions (helpers in `include/vu0.h`) | 100%, linked |
 | `src/d4/gamemode.cpp` | first part of `unit_0013C940` | a game mode (D5 work, matched early) | 8/9 |

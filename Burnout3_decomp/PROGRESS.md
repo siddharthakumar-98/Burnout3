@@ -15,6 +15,10 @@ denominator. The complete executable still has to reproduce the original SHA-1 a
 Scope follows the category boundaries in [docs/layout.md](docs/layout.md). Function and byte percentages
 measure different things; the visual map and badge use **code bytes**, not the function percentage.
 
+Game code is matched with Criterion's own names where
+[Burnout 2's DWARF-named decomp](https://github.com/b3dllc/burnout2) has the same code: see
+[burnout2.md](docs/burnout2.md).
+
 ## Preserved dependencies
 
 The vendor/runtime categories contain 3,453 functions and 899,564 code bytes

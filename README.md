@@ -28,7 +28,8 @@
 
 > [!NOTE]
 > **Done:** the matching build (byte-identical, from assembly), the compiler (D2) and the map of the binary (D3).
-> **Now:** matching game-source C/C++ (D4 core infrastructure, with a tail of near-misses).
+> **Now:** matching game-source C/C++ (D4 core infrastructure, with a tail of near-misses), using Criterion's own
+> class and function names recovered from [Burnout 2's DWARF-named decomp](Burnout3_decomp/docs/burnout2.md).
 > **Scope:** Burnout 3's game code. Vendor libraries are preserved dependencies, with existing sources and decomps
 > used to recover their interfaces. A native Rust rewrite remains a deferred, long-term goal.
 
@@ -124,7 +125,8 @@ original), then add its unit to `C_UNITS` in `Burnout3_decomp/configure.py`. The
 SHA-1. Run `tools/dock python3 tools/progress.py` to update the map. The
 [C/C++ guide](Burnout3_decomp/c_cpp/README.md) walks through adding a unit, and
 [docs/layout.md](Burnout3_decomp/docs/layout.md) explains how the binary is laid out. Keep original binaries,
-generated assembly and extracted data out of commits. Consult [existing library work](Burnout3_decomp/docs/library-references.md) first when a game function
+generated assembly and extracted data out of commits. Look for the function's Burnout 2 counterpart first ([docs/burnout2.md](Burnout3_decomp/docs/burnout2.md)): the
+same engine code often exists there with Criterion's names and layouts. Consult [existing library work](Burnout3_decomp/docs/library-references.md) when a game function
 depends on a vendor interface; only reconstruct library internals when that helps the game-source work.
 
 <h3>Related projects</h3>
@@ -137,6 +139,8 @@ depends on a vendor interface; only reconstruct library internals when that help
 <h3>Credits</h3>
 
 - The [Reburn 3](https://forum.mattkc.com/) community: Burnout 3 reverse engineering
+- [b3dllc/burnout2](https://github.com/b3dllc/burnout2), the Burnout 2 decomp whose debug-info names and layouts
+  identify Burnout 3's shared Criterion code
 - [splat](https://github.com/ethteck/splat), [spimdisasm](https://github.com/Decompollaborate/spimdisasm),
   [objdiff](https://github.com/encounter/objdiff), [m2c](https://github.com/matt-kempster/m2c),
   [decomp.me](https://decomp.me) and [wibo](https://github.com/decompals/wibo)

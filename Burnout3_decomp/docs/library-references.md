@@ -12,6 +12,9 @@ verified interfaces to its preserved dependencies. Keeping vendor libraries in g
 matching executable without requiring another engine/SDK decompilation. The complete objdiff report still retains
 the library categories for diagnostics, but they do not contribute to public game progress.
 
+Burnout 2's decomp is also the main reference for Burnout 3's **game code** (same Criterion codebase, debug-info
+names): see [burnout2.md](burnout2.md).
+
 ## Default workflow: reuse existing knowledge
 
 For a game function that calls a library, first consult the references below for names, prototypes, structures,

@@ -1,11 +1,9 @@
-/* game/unit_00212580: the file system. Devices hold open files; the RenderWare file interface
- * (RwFileFunctions) is replaced by the rwf* functions here (installed by fsInstallRwFileInterface).
- * C++ for the virtual calls (they load the slot into $t9); the functions keep their func_ names (extern "C"). */
+/* d4/fs (0x212580-0x212E30): Criterion's CGTFileSystem (GTFileSystem.cpp in Burnout 2, docs/burnout2.md). File systems
+ * hold open files; the static F* callbacks replace RenderWare's file interface (installed by InstallToRenderWare). */
 
 #include "fs.h"
 
 extern "C" {
-
 u32 strlen(const char *s);
 char *func_00127BF8(const char *s, const char *sub); /* strstr */
 
@@ -21,14 +19,9 @@ char *strcpy(char *dst, const char *src);
 char *strncpy(char *dst, const char *src, u32 n);
 s32 func_00127520(const char *a, const char *b, u32 n); /* strncmp */
 void *func_001D8B88(void);                             /* RwOsGetFileInterface */
+}
 
-/* .sbss */
-extern u32 fsNumDevices;         /* number of registered devices */
-extern s32 fsRwInstalled;         /* rwf* functions installed */
-extern FsDevice *fsDefaultDevice;   /* default device */
-extern FsDevice *fsDevices[2]; /* registered devices */
-
-/* .bss: RenderWare's original file functions, saved by fsInstallRwFileInterface (likely one RwFileFunctions in the original;
+/* .bss: RenderWare's original file functions, saved by InstallToRenderWare (Burnout 2: mStdRwFileInterface) (likely one RwFileFunctions in the original;
  * splat names each word, and incomplete arrays keep them out of small data so the relocations match). */
 extern void *D_00676440[];
 extern void *D_00676444[];
@@ -41,42 +34,44 @@ extern void *D_0067645C[];
 extern void *D_00676460[];
 extern void *D_00676464[];
 extern void *D_00676468[];
-extern char D_00676470[2][5]; /* registered device prefixes */
+extern char D_00676470[2][5]; /* registered prefixes (Burnout 2: msaFSNames) */
 
 /* rwftell */
-s32 fsRwTell(FsFile *f)
+s32 CGTFileSystem::FTell(void *fptr)
 {
-    return f->pos;
+    return ((CGTFile *)fptr)->mnFilePosition;
 }
 
 /* rwfexist */
-s32 fsRwExists(const char *path)
+s32 CGTFileSystem::FExist(const char *path)
 {
-    FsDevice *dev = fsFindDevice(path);
+    CGTFileSystem *dev = GetFileSystemFromFileName(path);
     if (dev == 0) {
         return 0;
     }
-    return dev->exists(path);
+    return dev->FileExists(path);
 }
 
 /* rwfflush */
-s32 fsRwFlush(FsFile *f)
+s32 CGTFileSystem::FFlush(void *fptr)
 {
     return 0;
 }
 
 /* rwfseek */
-s32 fsRwSeek(FsFile *f, s32 offset, s32 whence)
+s32 CGTFileSystem::FSeek(void *fptr, s32 offset, s32 origin)
 {
-    switch (whence) {
+    CGTFile *f = (CGTFile *)fptr;
+
+    switch (origin) {
     case 1:
-        f->seek(offset, 1);
+        f->SetPosition(offset, 1);
         break;
     case 2:
-        f->seek(offset, 2);
+        f->SetPosition(offset, 2);
         break;
     case 0:
-        f->seek(offset, 0);
+        f->SetPosition(offset, 0);
         break;
     default:
         return -1;
@@ -85,47 +80,47 @@ s32 fsRwSeek(FsFile *f, s32 offset, s32 whence)
 }
 
 /* rwfeof */
-s32 fsRwEof(FsFile *f)
+s32 CGTFileSystem::FEof(void *fptr)
 {
-    return f->pos >= f->size;
+    return ((CGTFile *)fptr)->mnFilePosition >= ((CGTFile *)fptr)->mnFileLength;
 }
 
 /* rwfputs */
-s32 fsRwPuts(const char *buf, FsFile *f)
+s32 CGTFileSystem::FPuts(const char *buf, void *fptr)
 {
-    return f->write(buf, strlen(buf));
+    return ((CGTFile *)fptr)->Write(buf, strlen(buf));
 }
 
 /* rwfgets */
-char *fsRwGets(char *buf, s32 maxLen, FsFile *f)
+char *CGTFileSystem::FGets(char *buf, s32 maxLen, void *fptr)
 {
     return 0;
 }
 
 /* rwfwrite */
-u32 fsRwWrite(const void *buf, u32 size, u32 count, FsFile *f)
+u32 CGTFileSystem::FWrite(const void *buf, u32 size, u32 count, void *fptr)
 {
-    return f->write(buf, size * count) / size;
+    return ((CGTFile *)fptr)->Write(buf, size * count) / size;
 }
 
 /* rwfread */
-u32 fsRwRead(void *buf, u32 size, u32 count, FsFile *f)
+u32 CGTFileSystem::FRead(void *buf, u32 size, u32 count, void *fptr)
 {
-    return f->read(buf, size * count) / size;
+    return ((CGTFile *)fptr)->Read(buf, size * count) / size;
 }
 
 /* rwfclose */
-s32 fsRwClose(FsFile *f)
+s32 CGTFileSystem::FClose(void *fptr)
 {
-    f->close();
+    ((CGTFile *)fptr)->Close();
     return 0;
 }
 
 /* rwfopen */
-FsFile *fsRwOpen(const char *path, const char *mode)
+void *CGTFileSystem::FOpen(const char *path, const char *mode)
 {
     s32 flags = 0;
-    FsDevice *dev;
+    CGTFileSystem *dev;
 
     if (func_00127BF8(mode, D_004B96D8)) {
         flags |= 1;
@@ -142,71 +137,72 @@ FsFile *fsRwOpen(const char *path, const char *mode)
     if (func_00127BF8(mode, D_004B96F8)) {
         flags |= 0x10;
     }
-    dev = fsFindDevice(path);
+    dev = GetFileSystemFromFileName(path);
     if (dev) {
-        return fsDeviceOpen(dev, path, flags);
+        return dev->Open(path, flags);
     }
     return 0;
 }
 
-/* Opens path on the first free slot of dev. */
-FsFile *fsDeviceOpen(FsDevice *dev, const char *path, s32 flags)
+/* Opens path on the first free file object. */
+CGTFile *CGTFileSystem::Open(const char *path, u32 flags)
 {
-    FsFile *file = 0;
+    CGTFileSystem *dev = this;
+    CGTFile *file = 0;
     u32 i;
 
-    for (i = 0; i < dev->numSlots; i++) {
-        FsFile *f = dev->slot(i);
-        if (f->status() == 0) {
+    for (i = 0; i < dev->mnNumFiles; i++) {
+        CGTFile *f = dev->GetFileObject(i);
+        if (f->GetStatus() == 0) {
             file = f;
             break;
         }
     }
     if (file) {
-        dev->lastError = file->open(dev, path, flags);
-        if (dev->lastError) {
+        dev->mnLastError = file->Open(dev, path, flags);
+        if (dev->mnLastError) {
             file = 0;
         }
     } else {
-        dev->lastError = 3;
+        dev->mnLastError = 3;
     }
     if (file) {
-        file->state = 2;
+        file->mnOpenState = 2;
     }
     return file;
 }
 
-/* Sets up dev; a prefix ("xxx" of "xxx:path") registers it for fsFindDevice. */
-s32 fsDeviceInit(FsDevice *dev, u32 numSlots, const char *prefix)
+/* Sets up the file system; a prefix ("xxx" of "xxx:path") registers it for GetFileSystemFromFileName. */
+s32 CGTFileSystem::Init(u32 numSlots, const char *prefix)
 {
     u32 i;
 
-    dev->numSlots = numSlots;
-    dev->lastError = 0;
-    dev->unk4 = 1;
+    mnNumFiles = numSlots;
+    mnLastError = 0;
+    mnStatus = 1;
     if (prefix) {
-        if (fsNumDevices >= 2) {
-            dev->lastError = 1;
+        if (mnNumFilesystems >= 2) {
+            mnLastError = 1;
             return 0;
         }
-        fsDevices[fsNumDevices] = dev;
-        strncpy(D_00676470[fsNumDevices], prefix, 4);
-        fsNumDevices++;
+        mpaFilesystems[mnNumFilesystems] = this;
+        strncpy(D_00676470[mnNumFilesystems], prefix, 4);
+        mnNumFilesystems++;
     }
-    for (i = 0; i < dev->numSlots; i++) {
-        dev->slot(i)->unk18 = 0;
+    for (i = 0; i < mnNumFiles; i++) {
+        GetFileObject(i)->mnStatus = 0;
     }
     return 1;
 }
 
-/* Sets the device used for paths without a prefix. */
-void fsSetDefaultDevice(FsDevice *dev)
+/* Sets the file system used for paths without a prefix. */
+void CGTFileSystem::SetAsDefaultFilesystem()
 {
-    fsDefaultDevice = dev;
+    mpDefaultFilesystem = this;
 }
 
 /* Joins a and b into dst (size bytes), turning b's '/' and '\\' into sep. */
-char *fsJoinPath(char *dst, s32 size, const char *a, const char *b, char sep)
+char *CGTFileSystem::BuildFileName(char *dst, s32 size, const char *a, const char *b, char sep)
 {
     s32 lenA = strlen(a);
     s32 lenB = strlen(b);
@@ -231,7 +227,7 @@ char *fsJoinPath(char *dst, s32 size, const char *a, const char *b, char sep)
 }
 
 /* Skips a device prefix ("xxx:"). */
-const char *fsSkipDevicePrefix(const char *path)
+const char *CGTFileSystem::GetFileNameFromDeviceName(const char *path)
 {
     u32 i;
 
@@ -244,10 +240,10 @@ const char *fsSkipDevicePrefix(const char *path)
     return path;
 }
 
-/* The device for path: the one registered under its prefix, else the default. */
-FsDevice *fsFindDevice(const char *path)
+/* The file system for path: the one registered under its prefix, else the default. */
+CGTFileSystem *CGTFileSystem::GetFileSystemFromFileName(const char *path)
 {
-    FsDevice *dev = fsDefaultDevice;
+    CGTFileSystem *dev = mpDefaultFilesystem;
     u32 i;
     char prefix[5];
 
@@ -255,9 +251,9 @@ FsDevice *fsFindDevice(const char *path)
         if (path[i] == ':') {
             strncpy(prefix, path, i + 1);
             prefix[i + 1] = 0;
-            for (i = 0; i < fsNumDevices; i++) {
+            for (i = 0; i < mnNumFilesystems; i++) {
                 if (func_00127520(prefix, D_00676470[i], 4) == 0) {
-                    dev = fsDevices[i];
+                    dev = mpaFilesystems[i];
                     break;
                 }
             }
@@ -267,12 +263,12 @@ FsDevice *fsFindDevice(const char *path)
     return dev;
 }
 
-/* Installs the rwf* functions in RenderWare's file interface, saving the old ones; 1 if it did now. */
-s32 fsInstallRwFileInterface(void)
+/* Installs the F* callbacks in RenderWare's file interface, saving the old ones; 1 if it did now. */
+s32 CGTFileSystem::InstallToRenderWare()
 {
     void **funcs;
 
-    if (fsRwInstalled) {
+    if (mbInstalledToRW) {
         return 0;
     }
     funcs = (void **)func_001D8B88();
@@ -287,19 +283,17 @@ s32 fsInstallRwFileInterface(void)
     D_00676460[0] = funcs[8];
     D_00676464[0] = funcs[9];
     D_00676468[0] = funcs[10];
-    funcs[1] = (void *)fsRwOpen;
-    funcs[2] = (void *)fsRwClose;
-    funcs[3] = (void *)fsRwRead;
-    funcs[4] = (void *)fsRwWrite;
-    funcs[5] = (void *)fsRwGets;
-    funcs[6] = (void *)fsRwPuts;
-    funcs[7] = (void *)fsRwEof;
-    funcs[8] = (void *)fsRwSeek;
-    funcs[9] = (void *)fsRwFlush;
-    funcs[0] = (void *)fsRwExists;
-    funcs[10] = (void *)fsRwTell;
-    fsRwInstalled = 1;
+    funcs[1] = (void *)FOpen;
+    funcs[2] = (void *)FClose;
+    funcs[3] = (void *)FRead;
+    funcs[4] = (void *)FWrite;
+    funcs[5] = (void *)FGets;
+    funcs[6] = (void *)FPuts;
+    funcs[7] = (void *)FEof;
+    funcs[8] = (void *)FSeek;
+    funcs[9] = (void *)FFlush;
+    funcs[0] = (void *)FExist;
+    funcs[10] = (void *)FTell;
+    mbInstalledToRW = 1;
     return 1;
-}
-
 }

@@ -15,7 +15,9 @@ never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing t
 > the game progress category contains 371 units including C carves and static initializers. Each unit has its own
 > slices of `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`. The current report has **78 / 5,654 game functions**
 > matched (1.38%), covering **11,444 / 2,674,804 code bytes** (0.43%). [PROGRESS.md](PROGRESS.md) and the visual map
-> track only game code; preserved dependencies are outside their denominator. The full build still
+> track only game code; preserved dependencies are outside their denominator. Burnout 2's
+> DWARF-named decomp has counterparts for Burnout 3's core code ([docs/burnout2.md](docs/burnout2.md)); the pool,
+> file system and load queue now carry Criterion's names (`GtLList`, `CGTFileSystem`, `CAsyncLoadManager`). The full build still
 > reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
 > milestones and [docs/layout.md](docs/layout.md) for the memory layout.
 
