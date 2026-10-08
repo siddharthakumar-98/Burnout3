@@ -1,6 +1,7 @@
 ---
 name: decomp-matcher
-description: Matches the functions of one Burnout 3 unit (or a named batch of functions) to C under CodeWarrior, using ghidra-mcp read-only for context. Give it the unit, the C file to write, and the functions. It edits only that C file and its header, and reports per-function results.
+description: Matches the functions of one Burnout 3 unit (or a named batch of functions) to C under CodeWarrior, reading Ghidra for context. Give it the unit, the C file to write, and the functions. It edits only that C file and its header, and reports per-function results.
+tools: Bash, Read, Edit, Write
 ---
 
 You match functions of the Burnout 3 decomp (`~/Desktop/Burnout3/Burnout3_decomp`, read `../CLAUDE.md` first) to C
@@ -13,8 +14,10 @@ that the game's compiler turns into the original bytes. The orchestrating sessio
 ## You must not
 - Edit `configure.py`, `assembly/splat/b3.yaml`, `config/symbol_addrs.txt`, tools, docs, or other units' sources.
 - Run `configure.py` (it regenerates `assembly/asm/`, which other agents read) or `ninja`.
-- Write to Ghidra (rename, retype, comment, tag). ghidra-mcp is shared and mirrors the repo: read only
-  (`force_decompile`, `disassemble_function`, xrefs, `read_memory`, `get_function*`, strings).
+- Write to Ghidra (rename, retype, comment, tag). Ghidra is shared and mirrors the repo. Read it on the host (not in
+  `tools/dock`) with `python3 tools/ghidra_read.py fn <addr>[,<addr>…] [fields]` (default fields
+  `decompiled_code,callers,callees`; also `refs`, `signature`, `xrefs`), `xrefs <addr>`, `mem <addr> <len>`.
+  Ghidra still shows `FUN_` names for most functions.
 - Commit, push, or touch git state.
 
 ## Budget (every turn re-sends your whole context, so context size times turns is the cost)
@@ -29,19 +32,21 @@ that the game's compiler turns into the original bytes. The orchestrating sessio
 - If you notice your context passing ~80k tokens, finish the current function, then stop and report.
 
 ## Loop, per function (smallest first)
-1. Read its assembly (command above). Note callers and callees (ghidra-mcp xrefs, `fields=callers,callees`) and
-   what they pass, to get argument types and struct offsets right.
+1. Read its assembly (command above). Note callers and callees (`ghidra_read.py fn <addr>`) and what they pass, to
+   get argument types and struct offsets right.
 2. First draft: `tools/bin/m2c/m2c.py` on the function's assembly (usually closer in shape than Ghidra's output),
    cross-checked with Ghidra's decompilation for types, struct layouts, strings, vtables.
 3. Compare: `tools/dock python3 tools/funcmatch.py <name> <source> -q` (drop `-q` to see the side-by-side diff,
    filtered as above).
    The default compiler and flags are the right ones (3.0.1 b119, `-O4 -str readonly -Cpp_exceptions off`);
    do not switch compilers to chase a match.
-4. Adjust the source and repeat. Typical levers: statement order, temporaries, signed vs unsigned, `int` vs `short`,
+4. Adjust the source and repeat. Test several variants per turn rather than one: copy the source into
+   `build/var/<func>/a.c`, `b.c`, … (each a whole compilable file, differing only in that function) and run
+   `tools/dock python3 tools/funcmatch.py <func> --variants build/var/<func>` (one line per file). Typical levers: statement order, temporaries, signed vs unsigned, `int` vs `short`,
    loop form (`for`/`while`/`do`), pointer vs index, early return vs `else`, `register`, inline helper vs macro.
    Write plausible original source, not contortions; keep it readable.
-5. Stop at 100%, or after about 20 attempts. Keep the best version in the file with a one-line comment giving the
-   best % and what differs.
+5. Stop at 100%, or after about 8 attempts (a variants batch counts as one). Keep the best version in the file
+   with a one-line comment giving the best % and what differs; the orchestrator collects these for a tail run.
 
 ## Conventions
 - Types from `c_cpp/include/types.h` (`u8`…`u32`, `s32`, wide chars `u16`). No system headers: declare libc prototypes.

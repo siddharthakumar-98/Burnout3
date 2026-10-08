@@ -433,12 +433,12 @@ u32 func_003E8B70(HeapSlot *slot)
     return slotSize(slot);
 }
 
-void func_003E8B80(HeapSlot *slot)
+void func_003E8B80(HeapSlot *slot, int layout)
 {
     slotAge(slot);
 }
 
-void func_003E8BA0(HeapSlot *slot)
+void func_003E8BA0(HeapSlot *slot, int layout)
 {
     slotRelease(slot);
 }
@@ -466,21 +466,44 @@ void func_003E8C00(HeapSlot *slot, void *base, int layout, u32 size)
 /* Probably not heap code (no Heap, called from unit_003C35C0 only): maps n (0-99) to one of 0xA8E-0xA93. */
 int func_003E8C20(int n)
 {
-    if (n == 99) {
-        return 0xA93;
-    }
-    if (n == 89 || n == 79 || n == 59 || n == 39 || n == 19) {
-        return 0xA92;
-    }
-    if (n == 93 || n == 73 || n == 53 || n == 33 || n == 13) {
-        return 0xA91;
-    }
-    if (n == 85 || n == 65 || n == 45 || n == 25 || n == 5) {
-        return 0xA90;
-    }
-    if (n == 94 || n == 86 || n == 80 || n == 74 || n == 66 || n == 60 || n == 54 || n == 46 || n == 40 || n == 34 ||
-        n == 26 || n == 20 || n == 14 || n == 6 || n == 0) {
+    switch (n) {
+    case 0:
+    case 6:
+    case 14:
+    case 20:
+    case 26:
+    case 34:
+    case 40:
+    case 46:
+    case 54:
+    case 60:
+    case 66:
+    case 74:
+    case 80:
+    case 86:
+    case 94:
         return 0xA8E;
+    case 5:
+    case 25:
+    case 45:
+    case 65:
+    case 85:
+        return 0xA90;
+    case 13:
+    case 33:
+    case 53:
+    case 73:
+    case 93:
+        return 0xA91;
+    case 19:
+    case 39:
+    case 59:
+    case 79:
+    case 89:
+        return 0xA92;
+    case 99:
+        return 0xA93;
+    default:
+        return 0xA8F;
     }
-    return 0xA8F;
 }

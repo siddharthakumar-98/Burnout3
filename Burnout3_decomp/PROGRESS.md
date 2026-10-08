@@ -6,14 +6,14 @@ when its C/C++ compiles to exactly the original bytes; the build links it once i
 
 | Category | Functions | | Code bytes | | Named |
 |---|---|---|---|---|---|
-| Burnout 3 game code | 48 / 5,654 | 0.85% | 6,144 / 2,674,804 | 0.23% | 38 |
+| Burnout 3 game code | 78 / 5,654 | 1.38% | 11,444 / 2,674,804 | 0.43% | 70 |
 | RenderWare 3.6 | 0 / 679 | 0.00% | 0 / 234,612 | 0.00% | 0 |
 | RenderWare Audio (EE side) | 0 / 702 | 0.00% | 0 / 145,532 | 0.00% | 0 |
-| Sony libsce | 0 / 936 | 0.00% | 0 / 155,784 | 0.00% | 154 |
+| Sony libsce | 0 / 936 | 0.00% | 0 / 155,784 | 0.00% | 158 |
 | Runtime: crt0, Metrowerks C++ runtime, newlib libc/libm, libgcc | 0 / 258 | 0.00% | 0 / 98,844 | 0.00% | 54 |
 | EA DirtySock | 0 / 554 | 0.00% | 0 / 116,316 | 0.00% | 10 |
 | Logitech device libraries | 0 / 324 | 0.00% | 0 / 148,476 | 0.00% | 41 |
-| **All** | 48 / 9,107 | 0.53% | 6,144 / 3,574,368 | 0.17% | 297 |
+| **All** | 78 / 9,107 | 0.86% | 11,444 / 3,574,368 | 0.32% | 333 |
 
 Categories follow the map in [docs/layout.md](docs/layout.md). Hand-written assembly and VU microcode are
 expected to stay assembly, as in the original source.

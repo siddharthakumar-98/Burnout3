@@ -81,8 +81,8 @@ int func_003E8760(Heap *heap, int layout);                /* set the layout; 0 w
 void func_003E87A0(Heap *heap);                           /* once per frame: age released slots */
 
 u32 func_003E8B70(HeapSlot *slot);
-void func_003E8B80(HeapSlot *slot);                       /* age */
-void func_003E8BA0(HeapSlot *slot);                       /* release */
+void func_003E8B80(HeapSlot *slot, int layout);           /* age (layout unused) */
+void func_003E8BA0(HeapSlot *slot, int layout);           /* release (layout unused) */
 void *func_003E8BB0(HeapSlot *slot, int layout);          /* take */
 void func_003E8C00(HeapSlot *slot, void *base, int layout, u32 size);
 

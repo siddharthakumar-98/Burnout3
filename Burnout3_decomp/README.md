@@ -6,10 +6,10 @@ The goal is C/C++ source that the original compiler (Metrowerks CodeWarrior for 
 builds into a byte-identical `SLUS_210.50`. The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech's device libraries. Game assets are
 never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing them.
 
-> **Status:** D3 done, D4 next. The compiler is identified (CodeWarrior 3.0.3,
-> `-O4 -str readonly -Cpp_exceptions off`), and 12 functions in 10 C/C++ files compile to the original bytes and are
+> **Status:** D4 (core infrastructure) in its tail. The compiler is identified (CodeWarrior 3.0.1 build 119,
+> `-O4 -str readonly -Cpp_exceptions off`), and 66 functions in 21 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
-> game code is split into 363 provisional translation units, and each unit has its own slices of `.data`, `.rodata`,
+> game code is split into 347 provisional translation units (plus the files carved out for C), and each unit has its own slices of `.data`, `.rodata`,
 > `.sdata`, `.sbss` and `.bss`. Progress is reported per category in [PROGRESS.md](PROGRESS.md). The full build still
 > reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
 > milestones and [docs/layout.md](docs/layout.md) for the memory layout.
@@ -26,8 +26,8 @@ never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing t
 - Python 3, for the optional native venv with splat/spimdisasm
 - Rust, to run the ISO extractor in `../Burnout3_rust`
 - Your own dump of the game
-- The CodeWarrior PS2 compiler, **Version 3.0.3**, which you supply in `compilers/3.0.3-020716/` (never committed). It
-  is the decomp.me build `mwcps2-3.0.3-020716`. [docs/compiler.md](docs/compiler.md) explains why this build was
+- The CodeWarrior PS2 compiler, **3.0.1 build 119**, which you supply in `compilers/3.0.1b119-040914/` (never
+  committed). It is the decomp.me build `3.0.1b119-040914`. [docs/compiler.md](docs/compiler.md) explains why this build was
   chosen.
 
 ## Building
@@ -59,7 +59,7 @@ never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing t
 The last step prints `build/SLUS_210.50: 332be40d… OK` when the output matches. Use `configure.py --no-split` to
 regenerate `build.ninja` without re-running splat.
 
-C units need the compiler in `compilers/3.0.3-020716/` (see Requirements). `tools/dock ninja` compiles each
+C units need the compiler in `compilers/3.0.1b119-040914/` (see Requirements). `tools/dock ninja` compiles each
 `c_cpp/src/**/*.c` listed in `C_UNITS` in `configure.py`, and links it in place of its assembly once it's marked as
 matching. To compare a C unit against the original, run `tools/dock objdiff-cli report generate -o build/report.json`,
 or open `tools/bin/objdiff` in this folder.
@@ -93,10 +93,12 @@ The decomp has two sides plus shared files at the top level.
 | `config/reloc_addrs.txt` | Relocation overrides (offsets the disassembler mistook for labels) | yes |
 | `config/linker_extra.ld` | Extra linker script, including the offsets used by `reloc_addrs.txt` | yes |
 | `tools/elf.py` | Extracts the load segment and rebuilds the exact ELF container | yes |
-| `tools/funcmatch.py` | Compares one C/C++ function with the original under chosen flags or compiler | yes |
+| `tools/funcmatch.py` | Compares C/C++ functions with the original: one function under chosen flags or compiler, every function in a file (`--all`), or one function across source variants (`--variants DIR`) | yes |
 | `tools/litfix.py` | Points a compiled object's float literals at the original's pooled `.lit4` entries (run by the build) | yes |
 | `tools/xref.py`, `tools/tusplit.py`, `tools/dataslice.py` | Map the binary: cross-references, translation-unit boundaries, per-unit data slices | yes |
 | `tools/ghidra_sync.py` | Keeps the Ghidra project (via ghidra-mcp) in step with the repo's functions, names and units | yes |
+| `tools/ghidra_read.py` | Read-only Ghidra queries (decompilation, callers/callees, refs, xrefs, memory) for matcher agents | yes |
+| `tools/vdbhash.py` | `Data/vdb.xml` format and key hash; `check` resolves the code's key names against your own copy | yes |
 | `tools/progress.py`, `tools/progress_map.py` | Write `PROGRESS.md`, the progress map `progress_map.svg` and its badge data `progress.json` from objdiff's report | yes |
 | `tools/dock` | Runs a command in the build container | yes |
 | `docker/Dockerfile` | Build image: binutils-mips-linux-gnu, wibo, objdiff-cli, splat | yes |

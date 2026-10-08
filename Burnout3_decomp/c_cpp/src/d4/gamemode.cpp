@@ -63,7 +63,7 @@ extern u8 D_00666090[];
 extern u8 D_00666130[];
 extern u8 D_0066A3D0[];
 extern s32 D_0066A544[];
-extern u8 D_01D6D880[];
+extern u8 theMemMgr[];
 extern u8 D_01E65499[];
 extern u8 D_01E77540[];
 extern s32 D_01E90430[];
@@ -111,7 +111,7 @@ void func_0013C9B0(GameMode *self)
     func_00135A90(D_00516DF0);
     D_00516E34[0] = 1;
     func_00135A90(D_00516E14);
-    func_003E8750(D_01D6D880);
+    func_003E8750(theMemMgr);
 }
 
 void func_0013CA10(GameMode *self)
@@ -170,7 +170,7 @@ void func_0013CBC0(GameMode *self)
 s32 func_0013CC70(GameMode *self)
 {
     D_01E65499[0] = 0;
-    if (!func_003E8760(D_01D6D880, 2)) {
+    if (!func_003E8760(theMemMgr, 2)) {
         return 0;
     }
     if (!func_001346C0(self)) {
@@ -209,6 +209,6 @@ void func_0013CDD0(GameModeC940 *self)
     }
 }
 
-/* func_0013CE20 onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
+/* loadQueueCancel (0x13CE20) onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
 
 }
