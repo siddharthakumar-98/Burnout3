@@ -41,7 +41,7 @@ tools/dock python3 tools/funcmatch.py <func> --variants build/var/<func>   # one
 - `Burnout3_decomp/c_cpp/{src,include}`: decompiled code; `src/<unit>.c` replaces `assembly/asm/<unit>`.
 - `Burnout3_decomp/tools/`: `tusplit.py` (unit boundaries; hand fixes in `FORCED_CUTS`/`MERGES` with reasons),
   `dataslice.py` (per-unit data slices; data `FORCED_CUTS` keyed by `(stream, VRAM)`), `litfix.py` (`.lit4` pool),
-  `xref.py`, `elf.py`, `progress*.py`, `ghidra_sync.py`.
+  `xref.py`, `elf.py`, `progress*.py`, `ghidra_sync.py`, `bo2map.py` (Burnout 2 pairs: `--bo2 PATH [--unit U]`).
 - `Burnout3_decomp/docs/`: `layout.md` (memory map, units), `compiler.md` (compiler identification), `d4.md`,
   `burnout2.md` (Burnout 2 mapping), `library-references.md`.
 - `Burnout3_rust/`: Phase 2 (deferred; long-term goal; ISO extractor `iso_extract` lives here).

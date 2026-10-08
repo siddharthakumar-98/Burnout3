@@ -23,6 +23,8 @@ Every D4 unit checked has a Burnout 2 counterpart, with the same functions in th
 
 ## How to use it
 
+- **Mapping tool:** `python3 tools/bo2map.py --bo2 PATH` proposes pairs for the whole game into `build/bo2map.tsv`;
+  `--unit UNIT` lists one unit's pairs and the Burnout 2 files to give the matcher (results in `d5.md`).
 - **Names:** adopt Criterion's class, method and field names where the correspondence is evidenced (same order,
   similar size, same callees/strings). Methods get MW-mangled names in `symbol_addrs.txt`.
 - **Matcher context:** for each unit, find the Burnout 2 counterpart first and give its header and C++ body to the
