@@ -112,8 +112,20 @@ asm void zero_asm(register float *p)
 ```
 
 Instructions in an `asm` block are scheduled with the surrounding code (in the first example the `sqc2` lands in the
-`jr` delay slot). GCC-style `asm("..." : : "r"(p))` and `__attribute__` are rejected. This is what VU0-heavy game code
-and the `pmaxw`/`pminw` clamp in `func_0013B670` need.
+`jr` delay slot). GCC-style `asm("..." : : "r"(p))` is rejected. `__attribute__((aligned(16)))` works on a typedef
+(struct or `float[4]`); `__declspec(align(16))` fails, and a plain struct of floats is only 4-aligned. This is what
+VU0-heavy game code and the `pmaxw`/`pminw` clamp in `func_0013B670` need.
+
+**VU0 helpers (D4 open question 1, settled 2026-10-08).** The first two VU0 functions (`func_00130BF0`, sets `w` to 0;
+`func_001AB010`, clears `xyz` of five vectors) match at 100% both as whole `asm` functions and as C calling
+`static inline` helpers from `include/vu0.h` (`Vec4`, `vu0SetW`, `vu0ZeroXYZ`), each helper one MW `asm { }` block on
+`register` pointer and float parameters. The build uses the helpers: they read like the inline vector methods the
+original used, and the compiler still schedules their instructions into the caller (`daddu v0,a0,zero` lands between
+the VU ops, `sqc2` fills the `jr` delay slot). Each call emits its own block, so repeated operations stay repeated;
+a `for` loop over them is not unrolled (0%). A float can't be a `qmtc2` operand directly: the compiler silently
+emits the wrong GPR (`qmtc2 a0`). Move it with `mfc1 v0, w` first, which also reproduces the original's folded
+`daddu v0,zero,zero` and hazard `nop` for a constant. No mwccps2 VU0 builtins are known. Whole `asm` functions stay
+for code no C shape reproduces.
 
 ## Flag shakedown (D4)
 
@@ -122,6 +134,10 @@ store that ours puts first. No optimizer setting changes that: `-O3`, `-O4`, `-O
 all give 74.38%, while `-O2` (54.38%, no scheduling) and `-O4,p` (67.50%) are further off. So it is a question of the
 source, to settle once its callers are understood. CodeWarrior has no separate scheduling switch: scheduling comes
 with `-opt level=3` and above. `-O3` and `-O4` still produce the same code for everything tried.
+
+**Settled by build 119 (2026-10-08):** the plain source (store `value`, then `0.85f * value`, then
+`value * D_004E1AE4`) matches at 100% under b119 with the default flags, as do three of the seven variants tried under
+3.0.3; the literal-before-store order is b119's scheduler, not the source.
 
 ## A later build? (D4)
 
@@ -165,6 +181,14 @@ method. The source was the version tuned for 3.0.3. Selected columns (match %, d
   everywhere; `-O4,p` is far off. The build uses `-O4`.
 - `func_0014EC30` reports 99.7% under every build because objdiff compares its jump-table relocation by symbol;
   it links byte-identical.
+- **Small `switch` order:** a `switch` too small for a jump table becomes compares in *reverse* source order, with
+  the case bodies laid out in source order. The memory manager's switches (`memMgrRelease`, `memMgrTake`) compare
+  4, 0x1A, 0x19, 0x18, 0x17, so the source lists `case 0x17` … `case 0x1A`, then `case 4`; with `case 4` first they
+  scored 10–34%. Read the compare chain backwards to get the case order. This holds for sparse switches too: 36 cases spread over 0–99 returning six
+  values (`func_003E8C20`) still become a compare chain, not a jump table, and match once the case groups are in the
+  order the reversed chain implies (`default` returns the value whose block falls through).
+- **Function pointers:** calling through a cast function pointer (`((void (*)(…))f)(…)`) gives `lui/addiu/jalr`, not
+  `jal`; declare the callee with the right prototype instead.
 
 ## Not everything is CodeWarrior
 

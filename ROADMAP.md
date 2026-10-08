@@ -6,15 +6,15 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** verifying it in PCSX2 and decompiling to C (D4 in progress) · **Next:** Rust rewrite of Burnout 3
+> **Currently:** decompiling to C (D4: 66 functions linked, a tail of 7 near-misses left) · **Next:** Rust rewrite of Burnout 3
 
 | Phase | Milestone | State | Updated | Notes |
 |---|---|---|---|---|
 | 1 Decomp | D0 Environment | **done** | 2026-10-05 | Tools installed, build image works, ISO and ELF hashes verified, PCSX2 boots the ISO. Ghidra project set up (see Machine state). |
 | 1 Decomp | D1 Matching build | **done** | 2026-10-05 | `tools/dock ninja` rebuilds `SLUS_210.50` byte-identical from splat assembly (8,948 functions, symbolic relocations). The rebuilt ELF boots in PCSX2 to the menu and into a race. |
-| 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-05 | CodeWarrior **3.0.3** (decomp.me `mwcps2-3.0.3-020716`) at `-O4`. 10 functions in 8 C/C++ files (leaf, float, `$gp` global, call, switch with jump table, C++ constructor) match 100% and are linked; the full SHA-1 still matches. Open: `-O3` vs `-O4` not yet separated; two near-misses and one inline-asm function. See `Burnout3_decomp/docs/compiler.md`. |
+| 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-08 | CodeWarrior **3.0.1 build 119** (decomp.me `3.0.1b119-040914`) at `-O4 -str readonly -Cpp_exceptions off`. Locked at 3.0.3 in D2; in D4 a sweep of all 19 `3.0.x` builds over every C function put b119 first or equal first on all of them, and it fixed D2's two near-misses and D3's `func_0027A900`. `-O4` over `-O3` settled by `ustrToUtf8` (99.9% vs 76.8%). The ELF's `2.4.1.01` stamp comes from a library object. See `Burnout3_decomp/docs/compiler.md`. |
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
-| 1 Decomp | D4 Core infrastructure | **in progress** | 2026-10-06 | Ghidra (ghidra-mcp) mirrors the repo through `tools/ghidra_sync.py`; 257 library functions named (syscall stubs, newlib, libgcc, and libraries named by their own messages); inline VU0 `asm` confirmed to compile; subsystems mapped to units in `Burnout3_decomp/docs/d4.md`, awaiting review before decompiling. |
+| 1 Decomp | D4 Core infrastructure | **in progress (tail)** | 2026-10-08 | Linked from C: file system (`d4/fs`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), pools, memory manager (`d4/memmgr`), UTF-16 formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files with the SHA-1 intact. In C but not linked yet, 7 near-misses: ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 2/5. Library functions named (libcdvd included), libcdvd callers classified, C++ conventions in `c_cpp/README.md`. Matching runs through one subagent at a time (`.claude/agents/decomp-matcher.md`). See `Burnout3_decomp/docs/d4.md`. |
 | 1 Decomp | D5–D11 Decompile subsystems to C | not started | | 12 functions in C so far (the D2 and D3 tests) |
 | 2 Rust rewrite | R1–R6 | not started | | Starts when the Phase 1 gate passes |
 
@@ -58,7 +58,7 @@ This repo was split out of GameMerge on 2026-10-06. The history of D0–D3 (comm
 | Rust | rustc 1.99 stable via Homebrew `rustup` (`/opt/homebrew/opt/rustup/bin`, on `PATH` via `~/.zshrc`) | — |
 | Ghidra | 12.1.4 + OpenJDK 21 (Homebrew), ghidra-emotionengine-reloaded v2.1.38 enabled. Project `Burnout3_decomp` (outside the repo, in `~/Desktop/Ghidra/`) has `SLUS_210.50` imported as `r5900:LE:32:default`, with `gp = 0x4E8670`, a `bss` block `0x4E2680`–`0x1ECE9FF`, and `SECTION4` split into `0x100000`–`0x469DFF` (code), `vu_microcode` `0x469E00`–`0x483EFF` (not executable) and `data` `0x483F00`–`0x4E267F`. ghidra-mcp v7.0.0 (bethington) serves it on port 8089; `tools/ghidra_sync.py` keeps it in step with the repo. Turn off **Strict Naming Enforcement** (Edit > Tool Options > GhidraMCP HTTP Server) so library names and struct fields aren't rejected or prefixed. | — |
 | Decomp helpers | Python venv at `Burnout3_decomp/.venv`, objdiff GUI and m2c in `Burnout3_decomp/tools/bin/` (gitignored) | — |
-| Compiler | `Burnout3_decomp/compilers/3.0.3-020716/` (gitignored) is the build in use. The other decomp.me PS2 builds sit beside it for comparison (`2.3.3`, `2.4.0-build0017`, `3.0`, `3.0.1`, and the 2003–2006 `3.0`/`3.0.1` builds). All run under wibo. | — |
+| Compiler | `Burnout3_decomp/compilers/3.0.1b119-040914/` (gitignored) is the build in use. The other decomp.me PS2 builds sit beside it for comparison (`2.3.3`, `2.4.0-build0017`, `3.0`, `3.0.1`, `3.0.3`, and the 2003–2006 `3.0`/`3.0.1` builds). All run under wibo. | — |
 
 ---
 
@@ -125,7 +125,7 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 ### Tooling
 | Purpose | Tool |
 |---|---|
-| Compiler | CodeWarrior PS2 `mwccps2` **Version 3.0.3**, run through **wibo** in the linux/amd64 image. It is one of four builds that stamp the game's `MW MIPS C Compiler (2.4.1.01)`, and the only one matching every D2 test ([docs/compiler.md](Burnout3_decomp/docs/compiler.md)). |
+| Compiler | CodeWarrior PS2 `mwccps2` **3.0.1 build 119** (2004-09), run through **wibo** in the linux/amd64 image. Best or equal best on every C function among all 19 `3.0.x` builds; the game was built between b103 and b119 ([docs/compiler.md](Burnout3_decomp/docs/compiler.md)). |
 | Assemble and link | GNU binutils (`mips-linux-gnu-as -march=r5900`, `ld`, `objcopy`). `tools/elf.py rebuild` wraps the linked segment in the original ELF container. |
 | Split and disassemble | splat (`platform: ps2`, `compiler: MWCCPS2`) and spimdisasm (R5900: MMI, `lq`/`sq`, VU0 macro ops) |
 | Diff and progress | objdiff (macOS GUI and CLI reports), asm-differ, decomp-permuter, decomp.me scratches |
@@ -138,9 +138,9 @@ orig/ build/ compilers/   gitignored: your ELF, build output, your compiler
 |---|---|---|---|
 | **D0** | Environment | Tools installed, image builds, ELF extracted and hashes verified, PCSX2 boots the ISO | **done** |
 | **D1** | Matching build | Section boundaries recovered. `ninja` builds `build/SLUS_210.50` entirely from generated assembly with SHA-1 `332be40d…`. | **done** |
-| D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files, CodeWarrior 3.0.3 `-O4` |
+| D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files; compiler since refined to 3.0.1 b119 `-O4` (D4) |
 | D3 | Map the binary | libsce, runtime (MW runtime, newlib), RenderWare 3.6 and other libraries, and VU microcode labeled and fenced off. Game TU boundaries carved, `.data`/`.rodata` split. Progress reported per category (`game`/`rw`/`rwa`/`sce`/`runtime`/`ea`/`lg`). | **done**: one unit per library, 358 provisional game units, per-unit slices of all five data sections, `.lit4` pool handled for C units |
-| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are matching C and linked, core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **in progress**: tooling and library names done, subsystem map written |
+| D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are matching C and linked, core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **in progress**: 66 functions linked; 7 near-misses left in ustring, heap, options, load queue |
 | D5 | Main loop and game flow | Boot, main loop, game state machine, mode/stage loading, frontend flow | |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
 | D7 | Gameplay rules | Boost economy, scoring, takedown detection and types, crash state machine, Impact Time, aftertouch, crash cameras | |
@@ -157,7 +157,7 @@ outward from core code. Within a milestone, work goes one translation unit at a 
 | Risk / question | Mitigation |
 |---|---|
 | Libraries weren't built with CodeWarrior | RenderWare, libsce, DirtySock and Logitech code is ee-gcc output and the MW runtime came from an older CodeWarrior. Matching them (D11) needs those compilers; until then they stay assembly. |
-| Is 3.0.3 the exact compiler? | It matches every D2 test that any available build matches. Two near-misses (`func_0013AE70`, `func_00131CE0`) may point to a build not on decomp.me, or to source forms not found yet. Revisit as more functions are decompiled. |
+| Is b119 the exact compiler? | The build is between b103 (loses `func_0013AE70`) and b145 (loses `ustrncat`/`ustrncpy`); b119 is the closest available and matches everything matched so far, including D2's former near-misses. Revisit if a tail function resists every source form. |
 | Section and TU boundaries had to be inferred from one merged segment | Recovered in D3 from compiler fingerprints, link order in `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`, version tags, `$Id` strings, vtables and static initializers; every object links at its original address. Game units are provisional and get merged or split as decompiling uncovers files. |
 | GNU ld standing in for the MW linker | Match the load segment, then rebuild the container in `tools/elf.py`. Already proven in D1. |
 | R5900-specific code (MMI, VU0 macro, 128-bit loads/stores) | Keep it as inline asm where the original most likely was. Hand-decompile the rest. |

@@ -63,13 +63,17 @@ C_UNITS = {
     # D3: float literals from the linker's .lit4 pool, retargeted by tools/litfix.py
     "d3/func_002527F0": {"linked": True},
     "d3/func_003EA7E0": {"linked": True},
+    "d3/func_0027A900": {"linked": True},  # 74.38% under 3.0.3, 100% under b119
     # D4: whole game units, with their data slices
     "d4/fs": {"linked": True},  # its data (mode strings, device table) stays in assembly for now
     "d4/pool": {"linked": True},
     "d4/valuedb": {"linked": True, "data": {"data/d4/valuedb_vt.data": ".data"}},  # its vtable
     "d4/vdb": {"linked": True},  # its data (CRC table, .sbss words) stays in assembly for now
     "d4/ustrfmt": {"linked": True},
-    "d4/ustring": {"linked": False},  # D4.3 step 2 in progress: 6 of 14 functions at 100% (docs/d4.md)
+    "d4/func_00130BF0": {"linked": True},  # VU0: inline asm helpers from vu0.h
+    "d4/func_001AB010": {"linked": True},
+    "d4/memmgr": {"linked": True},  # its data (arena, instance, .sbss words, vtable) stays in assembly for now
+    "d4/ustring": {"linked": False},  # 12 of 14 at 100%; ustrFromFloat, ustrFromFloatNoSep remain (docs/d4.md)
 }
 
 LD_SCRIPT_SPLAT = BUILD / f"{BASENAME}.ld"

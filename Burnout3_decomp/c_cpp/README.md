@@ -40,6 +40,44 @@ the original bytes.
 | `src/d2/func_0013B670.c` | `func_0013B670` | min/max clamp | draft; the original is inline asm |
 | `src/d3/func_002527F0.c` | `func_002527F0` | float literal from the `.lit4` pool | 100%, linked |
 | `src/d3/func_003EA7E0.c` | `func_003EA7E0` | float literal in a delay slot | 100%, linked |
+| `src/d3/func_0027A900.c` | `func_0027A900` | literal load scheduled before a store | 100%, linked (build 119) |
 
 Class and struct names such as `CUnk0028B700` are placeholders until the real ones are known. Details of how the
 compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
+
+## Conventions (settled in D4)
+
+- **Virtual calls need C++.** MW loads a vtable slot into `$t9` only for a real C++ virtual call; a C function
+  pointer goes through `$v0`. So a unit that makes virtual calls is a `.cpp` file, and the class is declared in its
+  header with `virtual` methods in slot order (`include/vdb.h`, `include/fs.h`). MW vtables start with two header
+  words, so the first virtual sits at `+0x08`.
+- **Methods can stay C names.** A class's own methods may be written as `extern "C"` functions that take `self`
+  (same code as a method), so they keep their `func_XXXXXXXX` or chosen C names in `symbol_addrs.txt`. Real methods
+  use MW mangling (`__ct__12CUnk0028B700Fv`, vtable `__vt__12CUnk0028B700`), and those mangled names go in
+  `symbol_addrs.txt` as they are.
+- **Vtables as data.** A vtable can be emitted from C as a plain `void *name[] = { 0, 0, (void *)method, … }` and
+  mapped onto the unit's `.vtables` slice with `"data": {"data/d4/<unit>_vt.data": ".data"}` in `configure.py`
+  (`src/d4/valuedb.cpp`); `tools/dataslice.py` cuts `.vtables` into one `<unit>_vt` slice per unit.
+- **Externs reached with `lui`.** A global the original reaches with `lui`/`addiu` (not `$gp`) must be declared as
+  an incomplete array (`extern u8 D_004EE040[];`), otherwise CodeWarrior assumes small data and uses `$gp`.
+- **Address order.** Functions (and data) in a file are defined in address order: the object's order is the link
+  order. `funcmatch.py` can't see a wrong order; only the SHA-1 check can.
+- **Relocation-only differences.** An objdiff score under 100% that differs only in relocation names (jump tables
+  `jtbl_…` vs `@N`, splat branch labels) is a real match; the link and SHA-1 decide.
+
+## D4 units (core infrastructure)
+
+| Source | Unit (start) | What | Status |
+|---|---|---|---|
+| `src/d4/pool.c` | `0x2B6C40` | fixed-size block pools | 8/8, linked |
+| `src/d4/vdb.cpp` | `0x21B8C0` | value registry (`VdbRegistry`), CRC table | 8/8, linked |
+| `src/d4/valuedb.cpp` | `0x24FDE0` | tuning database (`Data/vdb.xml`), vtable from C | 6/6, linked |
+| `src/d4/fs.cpp` | `0x212580` | file system with devices, RenderWare file interface | 18/18, linked |
+| `src/d4/ustrfmt.c` | `0x212E30` | UTF-16 `%N` substitution | 2/2, linked |
+| `src/d4/ustring.c` | `0x2130F0` (carved) | UTF-16 strings | 12/14 |
+| `src/d4/heap.c` | `unit_003E7850`, `_003E7AD0`, `_003E7D40` | heap core (slot table) | 9/13 |
+| `src/d4/options.cpp` | `unit_0021B5E0` | options | 4/5 |
+| `src/d4/memmgr.cpp` | `0x222300` | memory manager (the heap object's vtable), arena layout | 7/7, linked |
+| `src/d4/loadqueue.cpp` | `unit_0013CE20` | asynchronous load queue | 2/5 |
+| `src/d4/func_00130BF0.c`, `func_001AB010.c` | `0x130BF0`, `0x1AB010` | first VU0 functions (helpers in `include/vu0.h`) | 100%, linked |
+| `src/d4/gamemode.cpp` | first part of `unit_0013C940` | a game mode (D5 work, matched early) | 8/9 |

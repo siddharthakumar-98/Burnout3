@@ -40,7 +40,8 @@ u8 D_004E2914;
 s32 D_004E2918;
 
 /* 92.25%: the flag copy loop builds the 0/1 as `movz` from a hoisted 1 then `xori 1; sltiu 1` (== 1); `!= 0`
- * gives `sltu`. Every bool/ternary/if form tried folds differently. */
+ * gives `sltu`. `bool == true` gives the xori/sltiu tail, but s8->bool always becomes `sltu` (or a branch for
+ * `on = 1; if (!x) on = 0;`, 89.45%); every ternary/if/inline form folds to `sltu`. */
 void func_0021B5E0(Options *opts)
 {
     float y;

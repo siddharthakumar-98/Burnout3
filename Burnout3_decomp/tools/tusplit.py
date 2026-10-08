@@ -98,6 +98,9 @@ MERGES: dict[int, str] = {
     0x2129A0: "file system, as 0x2127A0: device registration and lookup on the same .sbss table; 0x212CB0 installs "
               "0x212580-0x2127A0 as RenderWare's file interface",
     0x22BEE0: "same controller object and helper 0x22C610 as 0x22B850-0x22BEE0",
+    0x3E7AD0: "heap core: the jump tables at 0x4CAE30/0x4CAE90 cut it into three; 0x3E7850 (size), 0x3E7AD0 (release) "
+              "and 0x3E7D40 (take) switch on the same block categories over the same Heap/HeapSlot structs",
+    0x3E7D40: "heap core, as 0x3E7AD0",
     0x2B52C0: "RenderWare Audio callback that clears .sbss 0x4E2CF4; 0x2B51F0 just before takes its address and uses "
               "the same variable, so it is a static function of that file",
 }

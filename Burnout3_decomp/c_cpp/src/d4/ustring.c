@@ -34,33 +34,12 @@ void ustrSetSeparators(u16 thousands, u16 point)
     decimalPoint[0] = point;
 }
 
-u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
+/* Inline digit writers for the float formatters (ustrFromUInt with and without thousands grouping). */
+static inline u16 *uintToStrSep(u16 *out, u32 n, int minDigits)
 {
-    u16 sep = thousandsSep[0];
-    u16 point = decimalPoint[0];
-    u16 saved;
     u16 buf[16];
-    u16 frac[16];
-    int whole;
-    u32 n;
-    int i, k, group, minDigits;
+    int group, i, k;
 
-    if (value < 0.0f) {
-        value = -value;
-        *out++ = minusSign[0];
-    } else if (plus == 1) {
-        *out++ = plusSign[0];
-    }
-    saved = thousandsSep[0];
-    whole = (int)value;
-    thousandsSep[0] = sep;
-
-    n = whole;
-    if (whole < 0) {
-        n = -whole;
-        *out++ = minusSign[0];
-    }
-    minDigits = 0;
     group = 0;
     for (i = 0, k = 0; i < 12; i++, k++) {
         u32 q = n / 10;
@@ -86,43 +65,77 @@ u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
         *out++ = buf[k];
     }
     *out = 0;
-    thousandsSep[0] = saved;
-
-    if (decimals != 0) {
-        *out++ = point;
-        n = (int)((value - (float)whole) * powersOf10[decimals]);
-        for (i = 0, k = 0; i < 12; i++, k++) {
-            u32 q = n / 10;
-            frac[k] = n - q * 10 + '0';
-            if (q == 0) {
-                i++;
-                k++;
-                break;
-            }
-            n = q;
-        }
-        while (i < decimals) {
-            decimals--;
-            *out++ = '0';
-        }
-        while (k > 0) {
-            k--;
-            *out++ = frac[k];
-        }
-        *out = 0;
-    }
     return out;
 }
 
+static inline u16 *uintToStr(u16 *out, u32 n, int minDigits)
+{
+    u16 buf[16];
+    int i, k;
+
+    for (i = 0, k = 0; i < 12; i++, k++) {
+        u32 q = n / 10;
+        buf[k] = n - q * 10 + '0';
+        if (q == 0) {
+            i++;
+            k++;
+            break;
+        }
+        n = q;
+    }
+    while (i < minDigits) {
+        minDigits--;
+        *out++ = '0';
+    }
+    while (k > 0) {
+        k--;
+        *out++ = buf[k];
+    }
+    *out = 0;
+    return out;
+}
+
+/* 97.20%: integer-part loop registers off by one (minDigits/group get t2/t1, original t1/t7, temps one higher),
+ * the two digit buffers swap stack slots (original: integer at sp+0, fraction at sp+32), and the shared epilogue
+ * differs (original ends `beq; addiu sp` / `jr ra; nop`). */
+u16 *ustrFromFloat(float value, u16 *out, int decimals, int plus)
+{
+    u16 point = decimalPoint[0];
+    u16 sep = thousandsSep[0];
+    u16 saved;
+    int whole;
+    u32 n;
+
+    if (value < 0.0f) {
+        value = -value;
+        *out++ = minusSign[0];
+    } else if (plus == 1) {
+        *out++ = plusSign[0];
+    }
+    whole = (int)value;
+    saved = thousandsSep[0];
+    thousandsSep[0] = sep;
+    n = whole;
+    if (whole < 0) {
+        n = -whole;
+        *out++ = minusSign[0];
+    }
+    out = uintToStrSep(out, n, 0);
+    thousandsSep[0] = saved;
+    if (decimals == 0) {
+        return out;
+    }
+    *out = point;
+    return uintToStr(out + 1, (int)((value - (float)whole) * powersOf10[decimals]), decimals);
+}
+
+/* 97.19%: same residuals as ustrFromFloat (register numbering in the integer loop, buffer slots, epilogue). */
 u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
 {
     u16 point = decimalPoint[0];
     u16 saved;
-    u16 buf[16];
-    u16 frac[16];
     int whole;
     u32 n;
-    int i, k, group, minDigits;
 
     if (value < 0.0f) {
         value = -value;
@@ -133,64 +146,18 @@ u16 *ustrFromFloatNoSep(float value, u16 *out, int decimals, int plus)
     whole = (int)value;
     saved = thousandsSep[0];
     thousandsSep[0] = 0;
-
     n = whole;
     if (whole < 0) {
         n = -whole;
         *out++ = minusSign[0];
     }
-    minDigits = 0;
-    group = 0;
-    for (i = 0, k = 0; i < 12; i++, k++) {
-        u32 q = n / 10;
-        buf[k] = n - q * 10 + '0';
-        if (q == 0) {
-            i++;
-            k++;
-            break;
-        }
-        if (thousandsSep[0] != 0 && ++group == 3) {
-            k++;
-            group = 0;
-            buf[k] = thousandsSep[0];
-        }
-        n = q;
-    }
-    while (i < minDigits) {
-        minDigits--;
-        *out++ = '0';
-    }
-    while (k > 0) {
-        k--;
-        *out++ = buf[k];
-    }
-    *out = 0;
+    out = uintToStrSep(out, n, 0);
     thousandsSep[0] = saved;
-
-    if (decimals != 0) {
-        *out++ = point;
-        n = (int)((value - (float)whole) * powersOf10[decimals]);
-        for (i = 0, k = 0; i < 12; i++, k++) {
-            u32 q = n / 10;
-            frac[k] = n - q * 10 + '0';
-            if (q == 0) {
-                i++;
-                k++;
-                break;
-            }
-            n = q;
-        }
-        while (i < decimals) {
-            decimals--;
-            *out++ = '0';
-        }
-        while (k > 0) {
-            k--;
-            *out++ = frac[k];
-        }
-        *out = 0;
+    if (decimals == 0) {
+        return out;
     }
-    return out;
+    *out = point;
+    return uintToStr(out + 1, (int)((value - (float)whole) * powersOf10[decimals]), decimals);
 }
 
 u16 *ustrFromInt(u16 *out, int value, int minDigits, int plus)

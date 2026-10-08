@@ -12,7 +12,7 @@ Matching decomp of Burnout 3: Takedown (PS2, SLUS_210.50, SHA-1 `332be40d…`), 
 - Every change must keep the build printing `build/SLUS_210.50: 332be40d… OK`.
 - Don't delete generated build files to force a clean build; clean-build checks go in a fresh clone in the scratchpad.
 - The repo is the source of truth; Ghidra mirrors it (never the other way round without review).
-- Time-box a stuck function at ~20 attempts, record the best % and the lead in `docs/d4.md`, move on.
+- Time-box a stuck function at ~8 attempts, record the best % and the lead in `docs/d4.md`, move on (tail runs later).
 
 ## Build (from `Burnout3_decomp/`)
 ```
@@ -20,9 +20,12 @@ tools/dock python3 configure.py           # hash check, splat split, build.ninja
 tools/dock ninja                          # assemble, compile C_UNITS, link, check SHA-1
 tools/dock python3 tools/progress.py      # PROGRESS.md, progress_map.svg, progress.json (commit these)
 tools/dock python3 tools/funcmatch.py <func> c_cpp/src/<unit>.c [-c compilers/<ver>] [-f=FLAGS]
+tools/dock python3 tools/funcmatch.py --all c_cpp/src/<unit>.c        # one line per function
+tools/dock python3 tools/funcmatch.py <func> --variants build/var/<func>   # one line per source variant
 ```
-`tools/dock` runs in the `b3-build` Docker image (linux/amd64). Ghidra sync runs on the host, not in the container:
-`python3 tools/ghidra_sync.py status|push|pull` (ghidra-mcp at 127.0.0.1:8089, program SLUS_210.50).
+`tools/dock` runs in the `b3-build` Docker image (linux/amd64). Ghidra tools run on the host, not in the container:
+`python3 tools/ghidra_sync.py status|push|pull` and the read-only `python3 tools/ghidra_read.py fn|xrefs|mem`
+(ghidra-mcp at 127.0.0.1:8089, program SLUS_210.50).
 
 ## Layout
 - `Burnout3_decomp/assembly/splat/b3.yaml`: the split. Game units `game/unit_<VRAM>`; carved units under `d2/`,
@@ -48,8 +51,9 @@ tools/dock python3 tools/funcmatch.py <func> c_cpp/src/<unit>.c [-c compilers/<v
   `2.4.1.01` stamp comes from a library object), `-O4 -str readonly -Cpp_exceptions off`; runs under wibo. Other
   builds sit beside it in `compilers/`. Don't switch compilers to chase one function (`docs/compiler.md`).
 - Matching agents: `.claude/agents/decomp-matcher.md` (one unit per agent; agents edit only their C file and header,
-  never run `configure.py`, and only read Ghidra). Units can run in parallel: `funcmatch.py` work files are named per
-  function and source file.
+  never run `configure.py`, and only read Ghidra). Run one agent at a time (parallel runs exhaust the usage limit);
+  the main session only orchestrates (dispatch, carve, name, link, build, docs) and doesn't match functions itself.
+  Check a unit's boundaries in Ghidra (`ghidra_read.py fn <addrs> callers,callees,refs`) before dispatching it.
 - No system headers: declare libc prototypes yourself. Fixed-size types in `c_cpp/include/types.h`; wide chars are
   `u16`. C headers used from C++ need `extern "C"`.
 - Float literals stay in the shared `.lit4` pool; the build repoints them (`litfix.py`), nothing to do in C.

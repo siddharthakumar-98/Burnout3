@@ -32,11 +32,11 @@ typedef struct LoadQueue {
 extern "C" {
 #endif
 
-s32 func_0013CE20(LoadQueue *q, s32 id);                                       /* cancel */
-s32 func_0013CFA0(LoadQueue *q, const char *path, u8 *done, void *buf, u32 size); /* queue, returns the id */
-void func_0013D250(LoadQueue *q);                                              /* service */
-void func_0013D410(LoadQueue *q);                                              /* close */
-void func_0013D4D0(LoadQueue *q);                                              /* init */
+s32 loadQueueCancel(LoadQueue *q, s32 id);                                       /* cancel */
+s32 loadQueueAdd(LoadQueue *q, const char *path, u8 *done, void *buf, u32 size); /* queue, returns the id */
+void loadQueueService(LoadQueue *q);                                              /* service */
+void loadQueueClose(LoadQueue *q);                                              /* close */
+void loadQueueInit(LoadQueue *q);                                              /* init */
 
 #ifdef __cplusplus
 }
