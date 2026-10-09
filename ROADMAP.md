@@ -6,8 +6,9 @@ the approach changes.
 ## Status
 
 > **Done:** Burnout 3 matching build (byte-identical, from assembly), compiler locked, binary mapped ·
-> **Currently:** PS2 game-source C/C++: 78 / 5,654 game functions match (66 of them linked; the rest sit in units
-> that link once their last near-misses match). D4 done with a tail of 6; D5 in progress (Burnout 2 mapping tool done) ·
+> **Currently:** PS2 game-source C/C++: 129 / 5,654 game functions match (82 of them linked; the rest sit in units
+> that link once their remaining functions match). D4 done with a tail of 6; D5 done with a recorded tail of 10;
+> D6 is next, with tail runs completing the remaining matches ·
 > **Dependencies:** preserved vendor assembly, with existing solutions guiding interfaces · **Long-term goal:** Rust rewrite
 
 | Phase | Milestone | State | Updated | Notes |
@@ -17,7 +18,7 @@ the approach changes.
 | 1 Decomp | D2 Compiler and flags locked | **done** | 2026-10-08 | CodeWarrior **3.0.1 build 119** (decomp.me `3.0.1b119-040914`) at `-O4 -str readonly -Cpp_exceptions off`. Locked at 3.0.3 in D2; in D4 a sweep of all 19 `3.0.x` builds over every C function put b119 first or equal first on all of them, and it fixed D2's two near-misses and D3's `func_0027A900`. `-O4` over `-O3` settled by `ustrToUtf8` (99.9% vs 76.8%). The ELF's `2.4.1.01` stamp comes from a library object. See `Burnout3_decomp/docs/compiler.md`. |
 | 1 Decomp | D3 Map the binary | **done** | 2026-10-06 | Libraries fenced off by compiler fingerprint and split one library per unit (libmpeg/libipu, libpad2/libdbc, libinsck/libmrpc, libmc2/netcnfif/libscf, newlib/libgcc); VU microcode split into 27 microprograms; every section boundary confirmed, including the small-data area: `.lit4` (float literals the linker pooled across files) `0x4E0680`, `.sdata` `0x4E1400`, `.sbss` `0x4E2680`, `.bss` `0x4E3000` with the libraries' COMMON block at its end. Game code split into 358 provisional translation units by `tools/tusplit.py`, and each unit given its own `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss` slices by `tools/dataslice.py`; all 922 objects link at their original addresses. `tools/litfix.py` lets C units use the pooled literals, proven by two more linked functions. Progress per category in `Burnout3_decomp/PROGRESS.md`. See `Burnout3_decomp/docs/layout.md`. |
 | 1 Decomp | D4 Core infrastructure | **done (tail: 6)** | 2026-10-08 | All planned D4 work is in C: file system (`CGTFileSystem`, 18), tuning registry and database (`d4/vdb`, `d4/valuedb`; `Data/vdb.xml` format and key hash in `tools/vdbhash.py`), link pool (`GtLList`), memory manager (`d4/memmgr`), load queue (`CAsyncLoadManager`), UTF-16 strings and formatting, the first VU0 functions (`vu0.h` inline-asm helpers); 66 functions in 21 files linked with the SHA-1 intact. Tail (see [tail policy](#tail-policy)): ustring 12/14, heap 10/13 (one real miss), options 4/5, load queue 3/5. Burnout 2's DWARF-named decomp (`Burnout3_decomp/docs/burnout2.md`) matched every D4 unit checked, which gave Criterion's names. Library functions named, libcdvd callers classified, C++ conventions in `c_cpp/README.md`. See `Burnout3_decomp/docs/d4.md`. |
-| 1 Decomp | D5 Main loop and game flow | **in progress** | 2026-10-08 | `tools/bo2map.py` done (Burnout 3 ↔ Burnout 2 pairs; 42 high, 0 wrong in the hold-out check; log in `docs/d5.md`). Next: the game-mode classes (`gamemode.cpp` already at 8/9; its base class is not `unit_00134570`) |
+| 1 Decomp | D5 Main loop and game flow | **done (tail: 10)** | 2026-10-08 | Boot, main loop/state machine, loading/shutdown and the frontend, preview, single-player, two-player and network mode lifecycles are in C++. 51/61 D5 functions match, 16 are linked; ten matching tails are recorded in `docs/d5.md`. Audio setup and drawing implementations remain D10 work. The mapping tool is done (42 high, 0 wrong in the hold-out check). Literal-pool retargeting now verifies values; all linked code preserves the original SHA-1. |
 | 1 Decomp | D6–D10 Game subsystems | not started | 2026-10-08 | Physics, gameplay, modes, AI and game-side presentation/platform integration; game-code category only |
 | 1 Decomp | D11 Dependency interfaces | ongoing supporting work | 2026-10-08 | Prefer existing library sources/decomps for names, types and behavior. Preserve vendor assembly; full library reconstruction is not a completion requirement. |
 | 2 Rust rewrite | R1–R6 | deferred; long-term goal | 2026-10-08 | Requires the verified Phase 1 decomp; not current work |
@@ -31,7 +32,7 @@ the approach changes.
 
 Phase 1 covers the game's source code, including its integration with rendering, audio, networking and devices.
 The public progress denominator is objdiff's `game` category; it currently contains 5,654 functions, 2,674,804 code
-bytes and 371 units. Vendor libraries/runtime (3,453 functions), startup assembly and VU microcode are preserved
+bytes and 378 units. Vendor libraries/runtime (3,453 functions), startup assembly and VU microcode are preserved
 dependencies outside that metric. The full ELF must still match the original SHA-1.
 
 Use existing source, headers and decomps before recovering a vendor interface from scratch. Full library
@@ -81,8 +82,8 @@ the assets. Hand-written assembly and VU microcode remain assembly.
 
 **Where it stands:** the build pipeline is complete and byte-identical, the compiler is locked (D2) and the binary
 is mapped into libraries, sections and provisional translation units with their own data (D3). The current report
-has 78 / 5,654 game functions in matching C/C++ (1.38%), covering 11,444 / 2,674,804 code bytes (0.43%). D4 (core
-infrastructure) is done apart from a recorded tail of 6 near-misses. D5-D10 recover the remaining game source, with
+has 129 / 5,654 game functions in matching C/C++ (2.28%), covering 20,096 / 2,674,804 code bytes (0.75%). D4 (core
+infrastructure) and D5 (main loop/game flow) are closed with recorded tails of 6 and 10. D6-D10 and tail runs recover the remaining game source, with
 Burnout 2's DWARF-named decomp supplying Criterion's names and layouts wherever the code is shared; D11 supports the dependency interfaces rather than rebuilding every library.
 
 ### What the binary is
@@ -162,7 +163,7 @@ The matcher agent's instructions are in `.claude/agents/decomp-matcher.md` at th
 | D2 | Compiler and flags locked | At least 10 functions across at least 3 TUs byte-match: a leaf C function, float math, a C++ ctor/vtable, and a switch/jump table. Flags recorded in `configure.py`. | **done**: 10 functions in 8 files; compiler since refined to 3.0.1 b119 `-O4` (D4) |
 | D3 | Map the binary | Libraries/runtime and VU microcode fenced off; game TU/data boundaries carved. Internal objdiff categories retain the complete binary; public completion tracks only `game`. | **done**: original library boundaries retained, per-unit data slices, `.lit4` pool handled for C units |
 | D4 | Core infrastructure | Memory/heaps, math (vector/matrix, VU0 paths), file I/O and streaming, the tuning-variable system (`VDB.XML` key hash), strings/localization. Done when the units listed in [docs/d4.md](Burnout3_decomp/docs/d4.md) are in C with at most a recorded tail ([tail policy](#tail-policy)), core headers exist in `c_cpp/include/`, library functions are named, and the SHA-1 still matches. | **done (tail: 6)**: 66 functions linked; ustring, heap, options and load queue wait on 6 near-misses |
-| D5 | Main loop and game flow | Starts with `tools/bo2map.py`, which proposes Burnout 3 ↔ Burnout 2 function pairs from order, size, vtables, callees/callers, strings and floats (done). Then boot, main loop, game state machine (`CGameMode` and its subclasses), mode/stage loading, frontend flow. | **in progress** |
+| D5 | Main loop and game flow | Starts with `tools/bo2map.py`, which proposes Burnout 3 ↔ Burnout 2 function pairs from order, size, vtables, callees/callers, strings and floats (done). Then boot, main loop, game state machine (`CGameMode` and its subclasses), mode/stage loading, frontend flow. | **done (tail: 10)**: lifecycle inventory in [docs/d5.md](Burnout3_decomp/docs/d5.md); 51/61 match, 16 linked |
 | D6 | Vehicle physics and handling | Physics step, suspension, steering, drift, transmission, boost kick | |
 | D7 | Gameplay rules | Boost economy, scoring, takedown detection and types, crash state machine, Impact Time, aftertouch, crash cameras | |
 | D8 | Game modes and progression | Race, Road Rage, Crash mode (pickups, multipliers, Crashbreaker), Eliminator, Burning Lap, Face-Off, World Tour, save data | |
@@ -248,7 +249,7 @@ boot path and catch anything the hash can't, such as a wrong load procedure.
 ### 3. Each decompiled function matches
 | Check | How | State |
 |---|---|---|
-| Per function | objdiff shows 100% for each game function accepted as matched; a whole unit must match before linking | **passing** (78 game functions matched in the current report) |
+| Per function | objdiff shows 100% for each game function accepted as matched; a whole unit must match before linking | **passing** (82 game functions matched in the current report) |
 | Progress | `tools/dock python3 tools/progress.py` writes a game-only table, map and badge; changing vendor counts must not change these metrics | **passing** |
 | No regressions | The full-ELF SHA-1 stays green after every unit lands, including the preserved vendor code | **passing** (current build matches the original) |
 

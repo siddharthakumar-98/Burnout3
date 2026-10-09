@@ -10,7 +10,7 @@ denominator. The complete executable still has to reproduce the original SHA-1 a
 
 | Scope | Matched functions | Function % | Matched code bytes | Code % | Named game functions |
 |---|---|---|---|---|---|
-| **Burnout 3 game code** | 78 / 5,654 | 1.38% | 11,444 / 2,674,804 | 0.43% | 70 |
+| **Burnout 3 game code** | 129 / 5,654 | 2.28% | 20,096 / 2,674,804 | 0.75% | 70 |
 
 Scope follows the category boundaries in [docs/layout.md](docs/layout.md). Function and byte percentages
 measure different things; the visual map and badge use **code bytes**, not the function percentage.

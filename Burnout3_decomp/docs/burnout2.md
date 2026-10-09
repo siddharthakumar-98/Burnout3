@@ -18,7 +18,7 @@ Every D4 unit checked has a Burnout 2 counterpart, with the same functions in th
 | `d4/pool` (8) | `GtLList` / `GtLListPool` (no debug info; names from the symbol table) | Same order: `GtLListRemoveAllLinks`, `RemoveLink`, `TakeLinkFromList`, `AddLink`, `Initialise`, `PoolSortFree`, `PoolCalculateSize` (0x28, equal), `PoolCreateInMemory(GtLListPoolTag *, void *, int, int, int, void *)`. |
 | load queue, `unit_0013CE20` (5) | `CAsyncLoadManager` (`Update`, `Abort`, `QueueLoadRequest(const char *, int *, void *, unsigned)`, `Init`) | `QueueLoadRequest` 0x2A0 vs our 0x2A4. Same layout: `PendingFileRequestTag maRequests[]` of 0x50 bytes (`macName`, `mpbCompletionReturn`, `mpBuffer`, `munReadLen`, `munId`), then `mpCurrentStream`, `mbAbortInProgress`, `mbPendingRead`, `munHead`, `munTail`, `munCurrentId`. Burnout 3 grew the ring from 16 to 24 and made the two flags bytes. Burnout 2's C bodies (`src/nodebug/CAsyncLoadManager.cpp`) are a direct lead for our three near-misses. |
 | `d4/vdb`, `d4/valuedb` | `CValueDatabase` (`Init`) with per-class `RegisterValues()` (`CCamera`, `CAICar`, `CInGameCamera`, ...); Burnout 2 also has `CSoundValueDatabase` | Burnout 3 generalised the registry; the registration pattern is the same. |
-| `gamemode.cpp` (D5) | `CGameMode` (`Init`, `Enter`, `Exit`, `Update`, `Pause`/`Resume`, `ActualPause`/`ActualResume`, `Restart`/`ActualRestart`, `Destroy`) plus `COnePlayerGameMode`, `CTwoPlayerSSGameMode`, `CTurnBasedGameMode` | Its base class in `unit_00134570`. |
+| Mode lifecycle (D5) | `CGameMode` (`Init`, `Enter`, `Exit`, `Update`, `Pause`/`Resume`, `ActualPause`/`ActualResume`, `Restart`/`ActualRestart`, `Destroy`) plus `COnePlayerGameMode`, `CTwoPlayerSSGameMode`, `CTurnBasedGameMode` | Two-player methods are at `0x13C940`; common lifecycle helpers are at `0x134600`–`0x134930`. The preceding eight default stubs are shared with physics/object vtables. Burnout 3's frontend, preview, single-player and network modes have reworked layouts; retain anonymous names until individual correspondences are established (see `d5.md`). |
 | memory manager, heap | not found by name (Burnout 2 has `linearmalloc.cpp` and RenderWare's heaps) | Likely new or reworked for Burnout 3. |
 
 ## How to use it
@@ -37,6 +37,10 @@ Every D4 unit checked has a Burnout 2 counterpart, with the same functions in th
 
 ## Applied
 
+- 2026-10-08, D5: checked Burnout 2's mode hierarchy and lifecycle bodies before reconstructing Burnout 3's boot,
+  game state machine and five embedded modes. Ghidra/call-site offsets establish the shared mode prefix and
+  next-mode pointer. The C++ lifecycle inventory is complete with ten recorded matching tails; full results and
+  presentation boundaries are in [d5.md](d5.md). Vendor internals remain preserved assembly.
 - 2026-10-08: `d4/pool` renamed to `GtLList*` (now `pool.cpp`, C++ functions); 6 of its 8 mangled names equal
   Burnout 2's, the other two differ only in parameter types Burnout 3 changed. `d4/fs` rewritten as `CGTFileSystem` /
   `CGTFile` with real methods and Criterion's field names; `FOpen`, `FExist`, `FWrite`, `Open` and `Init` mangle exactly

@@ -156,6 +156,38 @@ void func_003D14F0(void *self);
 void func_003FDF90(void *self);
 void func_00439280(void *self);
 
+extern u8 D_01E65489[];
+extern u8 D_01E91C3D[];
+extern s32 D_004E2A14[];
+extern u8 *D_004E25DC;
+void func_00130970(void *self);
+void func_001309C0(void *self);
+void func_00130A00(void *self);
+void func_00131B90(Game *game);
+void func_00135AA0(void *self);
+void func_0019A2E0(void *self);
+void func_0019A550(void *self);
+u8 func_0019A950(void *self);
+void func_0019EA30(void *self);
+void func_0019EB60(void *self);
+void func_001D3A60(void *self);
+void func_001D3D20(void);
+void func_001F43B0(void);
+void func_00214050(void *self);
+void func_002270B0(void *self);
+void func_00227360(void *self, s32 arg);
+void func_00270E10(void *self);
+void func_00270ED0(void *self);
+void func_0028AEB0(void *self);
+void func_0030D6E0(void *self);
+void func_0030D7C0(void *self);
+void func_0030EB10(void *self);
+void func_00375300(s32 arg);
+s32 func_00376570(void *self, s32 minimum, s32 maximum);
+void func_003767B0(void *self, s32 rate, s32 blocked);
+void func_003767C0(void *self);
+void func_00438F30(void *self);
+
 s32 func_00131D20(Game *game)
 {
     GameModeDriver *driver;
@@ -215,11 +247,11 @@ s32 func_00131E40(Game *game)
     return 0;
 }
 
-void func_00131F10(Game *game, s32 arg)
+void func_00131F10(Game *game, GameModeRef *next)
 {
     switch (game->unk2DA90) {
     case 5:
-        game->unk2DA4C = arg;
+        game->next = next;
         game->unk2DA8C = 6;
         break;
     }
@@ -349,7 +381,7 @@ void func_00132420(Game *game)
     func_00270C90(D_01E32AE0);
     game->unk2DA50 = 0;
     game->current = 0;
-    game->unk2DA4C = 0;
+    game->next = 0;
     ((GameSubsystem *)game->unk28E00)->unk0C();
     ((GameSubsystem *)game->unk299B0)->unk0C();
     func_00271A10(&game->unk2DA04);
@@ -377,7 +409,247 @@ void func_00132560(Game *game)
     game->unk2DA8C = 2;
 }
 
-/* func_00132600 .. func_00133170 go here (later run). */
+/* The top-level frame/state machine. Mode-specific gameplay remains in each mode's driver. */
+void func_00132600(Game *game)
+{
+    s32 ready;
+    s32 rate;
+    s32 i;
+    GameModeDriver *driver;
+
+    game->unk2A640 = (game->unk2A640 << 16) + (game->unk2A640 >> 16);
+    game->unk2A640 += game->unk2A644;
+    game->unk2A644 += game->unk2A640;
+    func_00130A00(D_004EB1E0);
+    if (game->unk2DA95) {
+        game->unk2DA94 = 0;
+    } else if (game->unk2DA96) {
+        game->unk2DA94 = 1;
+    }
+    game->unk2DA95 = 0;
+    game->unk2DA96 = 0;
+    if (!func_00132090_blocked() && game->unk2DA90 != game->unk2DA8C) {
+        game->unk2DA90 = game->unk2DA8C;
+    }
+    game->loader.Update();
+    memMgrUpdate((Heap *)theMemMgr);
+    func_00375300(func_00222C90(D_00665EC0));
+    func_001D4020(game);
+    *(f32 *)(D_004E25DC + 0x18) += *(f32 *)(game->unk7000 + 0x5C);
+    switch (game->unk2DA90) {
+    case 1:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        D_01E91C3D[0] = 1;
+        game->current = game->next;
+        game->next = 0;
+        ((GameSubsystem *)D_01EA2970)->unk10();
+        func_0030D7C0(D_01E90240);
+        game->unk2DA8C = 7;
+        break;
+    case 6:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        D_01E91C3D[0] = 1;
+        game->unk2DA54 = -1;
+        game->unk2DA58 = -1;
+        game->unk2DA5C = -1;
+        if (!D_01E65489[0]) {
+            func_0022B8E0(game->unk7080, -1);
+            func_00214050(game->unk7080);
+        }
+        func_0019A2E0(D_00522660);
+        game->unk2DA64 = 0;
+        game->current->unk18();
+        game->current = game->next;
+        game->next = 0;
+        game->unk2DA66 = 0;
+        game->unk2DA65 = 0;
+        ((GameSubsystem *)D_01EA2970)->unk10();
+        func_0030D7C0(D_01E90240);
+        game->unk2DA8C = 7;
+        break;
+    case 7:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        ready = func_001322B0(game);
+        if (!ready) {
+            D_01E91C3D[0] = 1;
+        }
+        ((GameSubsystem *)D_01EA2970)->unk10();
+        func_0030D7C0(D_01E90240);
+        if (ready) {
+            game->unk2DA8C = 4;
+            game->unk2DA90 = 4;
+        }
+        break;
+    case 8:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        D_01E91C3D[0] = 1;
+        game->unk2DA54 = -1;
+        game->unk2DA58 = -1;
+        game->unk2DA5C = -1;
+        func_0022B8E0(game->unk7080, -1);
+        func_0028AEB0(D_01E75640);
+        func_0019A2E0(D_00522660);
+        game->unk2DA64 = 0;
+        game->current->reload = 1;
+        game->unk2DA8C = 9;
+        game->unk2DA90 = 9;
+        break;
+    case 9:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        ready = func_001322B0(game);
+        if (!ready) {
+            D_01E91C3D[0] = 1;
+        }
+        ((GameSubsystem *)D_01EA2970)->unk10();
+        func_0030D7C0(D_01E90240);
+        if (ready) {
+            game->unk2DA8C = 4;
+            game->unk2DA90 = 4;
+        }
+        break;
+    case 10:
+        game->unk2DA54 = -1;
+        game->unk2DA58 = -1;
+        game->unk2DA5C = -1;
+        func_0022B8E0(game->unk7080, -1);
+        func_0028AEB0(D_01E75640);
+        func_0019A2E0(D_00522660);
+        game->unk2DA64 = 0;
+        game->current->reload = 1;
+        game->unk2DA8C = 11;
+        game->unk2DA90 = 11;
+    case 11:
+        func_001D3D20();
+        D_004E2A14[0]++;
+        func_001D3A60(game->unk7000 + 0x40);
+        func_001D3A60(D_00522660);
+        ready = func_001322B0(game);
+        if (!ready) {
+            D_01E91C3D[0] = 1;
+        }
+        ((GameSubsystem *)D_01EA2970)->unk10();
+        func_0030D7C0(D_01E90240);
+        if (ready) {
+            game->unk2DA8C = 12;
+            game->unk2DA90 = 12;
+        }
+        break;
+    case 12:
+        game->current->unk1C();
+        game->unk2DA8C = 4;
+        game->unk2DA90 = 4;
+    case 4:
+        game->unk2DA64 = func_0019A950(D_00522660);
+        if (!game->unk2DA64) {
+            func_001D3D20();
+            D_004E2A14[0]++;
+            func_001D3A60(game->unk7000 + 0x40);
+            func_001D3A60(D_00522660);
+            D_01E91C3D[0] = 1;
+            ((GameSubsystem *)D_01EA2970)->unk10();
+            func_0030D7C0(D_01E90240);
+            if (!D_01E65489[0]) {
+                func_0022B8E0(game->unk7080, -1);
+                func_00214050(game->unk7080);
+            }
+            func_0028B160(D_01E75640);
+            func_00270ED0(D_01E32AE0);
+            driver = game->current->driver;
+            if (driver != 0) {
+                driver->unk78();
+            }
+            func_00270E10(D_01E32AE0);
+            func_00131B90(game);
+            break;
+        }
+        if (game->current != 0) {
+            driver = game->current->driver;
+            if (driver != 0) {
+                driver->unk74();
+            }
+        }
+        func_003767C0(game->unk2DA10);
+        game->unk2DA8C = 5;
+        game->unk2DA90 = 5;
+        func_0030EB10(D_01EA2970);
+    case 5:
+        func_00132090(game);
+        rate = game->unk2DA6C;
+        if (rate == 3) {
+            rate = game->unk2DA68;
+        }
+        if (game->unk2DA54 == -1 && !func_00132090_blocked()) {
+            func_003767B0(game->unk2DA10, rate, 0);
+        } else {
+            func_003767B0(game->unk2DA10, rate, 1);
+        }
+        for (i = 0; i < game->unk2DA84; i++) {
+            if (game->unk2DA58 != -1) {
+                game->unk2DA38 = i;
+                break;
+            }
+            func_001D3D20();
+            D_004E2A14[0]++;
+            func_001D3A60(game->unk7000 + 0x40);
+            func_001D3A60(D_00522660);
+            if (!D_01E65489[0]) {
+                func_00214050(game->unk7080);
+            }
+            func_00135AA0(game->unk28DB0);
+            func_00135AA0(game->unk28DD4);
+            func_001309C0(D_004EB1E0);
+            if (game->unk2DA54 == -1 && D_004EB1E0[0]) {
+                func_00270ED0(D_01E32AE0);
+                if (!func_00132090_blocked()) {
+                    func_0019A550(D_00522660);
+                }
+                game->current->unk10();
+                func_00270E10(D_01E32AE0);
+                func_00131B90(game);
+            }
+            if (D_004EB1E0[0]) {
+                ((GameSubsystem *)D_01EA2970)->unk10();
+            }
+            func_0030D7C0(D_01E90240);
+            if (game->unk2DA8C != 5) {
+                break;
+            }
+        }
+        func_00131F90(game);
+        func_001F43B0();
+        if (game->unk2DA66) {
+            game->unk2DA84 = func_00376570(game->unk2DA10, 2, 8);
+        } else {
+            game->unk2DA84 = func_00376570(game->unk2DA10, 1, 4);
+        }
+        func_0019EB60(D_00665EC0);
+        game->current->unk14();
+        break;
+    }
+    func_00227360(D_00665EC0, 0);
+    func_0030D6E0(D_01E90240);
+    func_00438F30(D_01ECDE90);
+    func_00130970(D_004EB1E0);
+    func_0019EA30(D_00665EC0);
+    func_002270B0(D_00665EC0);
+    game->unk299A6 = 0;
+    game->unk2A556 = 0;
+}
 
 void func_00133180(void)
 {
@@ -389,6 +661,8 @@ s32 func_00133190(Game *game)
     u16 thousands;
     u16 point;
     void *file;
+    const char *globalName;
+    const char *headName;
     s32 i;
 
     func_001D4020(game);
@@ -420,6 +694,8 @@ s32 func_00133190(Game *game)
         }
         game->unk2DA74 = memMgrTake((Heap *)theMemMgr, 0xA, 0);
         game->unk2DA78 = memMgrTake((Heap *)theMemMgr, 0xB, 0);
+        globalName = D_004B5BA8[0];
+        headName = D_004B5C20[0];
         if (game->unk2DA74 == 0 || game->unk2DA78 == 0) {
             return 0;
         }
@@ -441,9 +717,9 @@ s32 func_00133190(Game *game)
             break;
         }
         ustrSetSeparators(thousands, point);
-        game->loader.QueueLoadRequest(D_004B5BA8[0], &game->unk2A654, game->unk2DA74,
+        game->loader.QueueLoadRequest(globalName, &game->unk2A654, game->unk2DA74,
                                       memMgrSize((Heap *)theMemMgr, 0xA));
-        game->loader.QueueLoadRequest(D_004B5C20[0], &game->unk2A655, game->unk2DA78,
+        game->loader.QueueLoadRequest(headName, &game->unk2A655, game->unk2DA78,
                                       memMgrSize((Heap *)theMemMgr, 0xB));
         game->unk2DA60 = 4;
     case 4:
@@ -561,7 +837,7 @@ s32 func_00133190(Game *game)
         game->unk2DA84 = 1;
         func_0021B5E0(game->unk7000);
         func_0021B4E0(game->unk7000);
-        game->unk2DA4C = (s32)game->unk2C668;
+        game->next = (GameModeRef *)game->unk2C668;
         game->unk2DA60 = 23;
         game->unk2DA90 = 1;
         game->unk2DA8C = 1;
@@ -636,7 +912,7 @@ void func_00133BB0(Game *game)
     vdbSetDatabase(game->unk8860, 0);
     game->unk2DA50 = 0;
     game->current = 0;
-    game->unk2DA4C = 0;
+    game->next = 0;
     game->unk2A648 = 0;
     ((GameModeRef *)game->unk2C668)->unk08();
     ((GameModeRef *)game->unk2C9A0)->unk08();

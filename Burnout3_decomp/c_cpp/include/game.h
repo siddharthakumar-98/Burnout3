@@ -62,7 +62,13 @@ public:
     u8 unk1AC;              /* 0x1AC */
     virtual void unk08();
     virtual s32 unk0C();    /* vtable +0x0C */
+    virtual void unk10();
+    virtual void unk14();
+    virtual void unk18();
+    virtual void unk1C();
     GameModeDriver *driver; /* 0x1B4 */
+    void *unk1B8;
+    u8 reload;             /* 0x1BC */
 };
 
 /* Objects this unit only starts, updates and shuts down through their vtables (D_01EA2970, Game+0x28E00,
@@ -92,8 +98,12 @@ struct Game {
     u8 unk8860[0x28DB0 - 0x8860];    /* 0x8860: a vdb database */
     u8 unk28DB0[0x28DD4 - 0x28DB0];  /* 0x28DB0 */
     u8 unk28DD4[0x28E00 - 0x28DD4];  /* 0x28DD4 */
-    u8 unk28E00[0x299B0 - 0x28E00];  /* 0x28E00: a GameSubsystem */
-    u8 unk299B0[0x2A560 - 0x299B0];  /* 0x299B0: a GameSubsystem */
+    u8 unk28E00[0x299A6 - 0x28E00];  /* 0x28E00: a GameSubsystem */
+    u8 unk299A6;
+    u8 pad299A7[0x299B0 - 0x299A7];
+    u8 unk299B0[0x2A556 - 0x299B0];  /* 0x299B0: a GameSubsystem */
+    u8 unk2A556;
+    u8 pad2A557[0x2A560 - 0x2A557];
     u8 unk2A560[0x2A640 - 0x2A560];  /* 0x2A560 */
     s32 unk2A640;                    /* 0x2A640: seeded 0xFD462907 */
     s32 unk2A644;                    /* 0x2A644: seeded 0x02B9D6F8 */
@@ -146,9 +156,11 @@ struct Game {
     s32 unk2DA04;                    /* 0x2DA04 */
     s32 unk2DA08;                    /* 0x2DA08 */
     u8 pad2DA0C[0x2DA10 - 0x2DA0C];
-    u8 unk2DA10[0x2DA48 - 0x2DA10];  /* 0x2DA10: frame timer (D_0051BA50) */
+    u8 unk2DA10[0x2DA38 - 0x2DA10];  /* 0x2DA10: frame timer (D_0051BA50) */
+    s32 unk2DA38;
+    u8 pad2DA3C[0x2DA48 - 0x2DA3C];
     GameModeRef *current;            /* 0x2DA48: current mode */
-    s32 unk2DA4C;                    /* 0x2DA4C */
+    GameModeRef *next;               /* 0x2DA4C: requested mode */
     u8 unk2DA50;                     /* 0x2DA50 */
     s32 unk2DA54;                    /* 0x2DA54 */
     s32 unk2DA58;                    /* 0x2DA58 */
@@ -186,7 +198,7 @@ s32 func_00131D90(Game *game);
 s32 func_00131DF0(void);
 s32 func_00131E00(Game *game);
 s32 func_00131E40(Game *game);
-void func_00131F10(Game *game, s32 arg);
+void func_00131F10(Game *game, GameModeRef *next);
 #ifdef __cplusplus
 bool func_00131F60(Game *game);
 #else
@@ -197,7 +209,9 @@ void func_00132090(Game *game);
 s32 func_001322B0(Game *game);
 void func_00132420(Game *game);
 void func_00132560(Game *game);
+void func_00132600(Game *game);
 void func_00133180(void);
+s32 func_00133190(Game *game);
 void func_00133BB0(Game *game);
 
 #ifdef __cplusplus

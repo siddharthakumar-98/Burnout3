@@ -28,7 +28,8 @@
 
 > [!NOTE]
 > **Done:** the matching build (byte-identical, from assembly), the compiler (D2) and the map of the binary (D3).
-> **Now:** D4 (core infrastructure) is done apart from a tail of 6 near-misses; D5 (main loop and game flow) is next.
+> **Now:** D4 (core infrastructure) is done with a tail of 6; D5 (main loop and game flow) is done with a
+> [recorded tail of 10 unmatched functions](Burnout3_decomp/docs/d5.md#recorded-tail). D6 is next; tail runs complete the remaining matches.
 > Game code gets Criterion's own class and function names from [Burnout 2's DWARF-named decomp](Burnout3_decomp/docs/burnout2.md).
 > **Scope:** Burnout 3's game code. Vendor libraries are preserved dependencies, with existing sources and decomps
 > used to recover their interfaces. A native Rust rewrite remains a deferred, long-term goal.

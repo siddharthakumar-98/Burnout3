@@ -7,13 +7,14 @@ CodeWarrior puts every float literal it can't build with lui (0.85f, FLT_MAX, ..
 and loads it with `lwc1 $fN, @lit($gp)` under an R_MIPS_LITERAL relocation. The original linker pooled those
 literals from all files into one .lit4 area at 0x4E0680, ordered by first use and only partly deduplicated
 (docs/layout.md), so neither the order nor the address can be reproduced from the object alone. Instead, each
-R_MIPS_LITERAL relocation is retargeted at the label the original instruction at the same address uses
-(`%gp_rel(D_004E0BA8)`, read from the unit's assembly) and becomes an ordinary R_MIPS_GPREL16 against it. The
+R_MIPS_LITERAL relocation is retargeted at a pooled label with the same four bytes, referenced by the original
+function, and becomes an ordinary R_MIPS_GPREL16 against it. Prefer the original instruction's label when its
+value agrees; otherwise use the nearest original load of that value. The
 object's own .lit4 sections are then unreferenced, and the linker script discards them.
 
-A function's original address comes from its name (func_XXXXXXXX) or config/symbol_addrs.txt. Literals whose
-original instruction can't be found (a function that doesn't match yet) are left alone with a warning, so
-objdiff still sees the object; such a unit can't be linked anyway. Plain Python, no dependencies; the object is
+A function's original address comes from its name (func_XXXXXXXX) or config/symbol_addrs.txt. Literals with no
+verified original value are left alone with a warning, so an incorrect source constant cannot be silently
+replaced with a different value. Plain Python, no dependencies; the object is
 rewritten in place.
 """
 
@@ -24,6 +25,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SYMBOL_ADDRS = ROOT / "config/symbol_addrs.txt"
+ORIG_ROM = ROOT / "orig/SLUS_210.50.rom"
+LIT4_START, LIT4_END = 0x4E0680, 0x4E1400
 R_MIPS_GPREL16, R_MIPS_LITERAL = 7, 8
 SHT_SYMTAB, SHT_REL = 2, 9
 INSN = re.compile(r"\s*/\* [0-9A-F]+ ([0-9A-F]{8}) [0-9A-F]{8} \*/.*%gp_rel\(([^)+]+)\)")
@@ -51,6 +54,37 @@ def gp_targets(asm: Path) -> dict[int, str]:
         if m:
             out[int(m.group(1), 16)] = m.group(2)
     return out
+
+
+def pooled_loads(asm: Path, rom: bytes, known: dict[str, int]) -> dict[str, list[tuple[int, str, bytes]]]:
+    """Verified original literal loads, restricted to the immutable .lit4 pool and their owning function."""
+    loads: dict[str, list[tuple[int, str, bytes]]] = {}
+    function = None
+    for line in asm.read_text().splitlines():
+        label = re.match(r"^glabel (\S+)$", line)
+        if label:
+            function = label.group(1)
+        elif line.startswith("endlabel "):
+            function = None
+        match = INSN.match(line)
+        if not function or not match:
+            continue
+        symbol = match.group(2)
+        address = known.get(symbol)
+        if address is None and re.fullmatch(r"D_[0-9A-F]{8}", symbol):
+            address = int(symbol[2:], 16)
+        if address is None or not LIT4_START <= address <= LIT4_END - 4:
+            continue
+        value = rom[address - 0x100000:address - 0x100000 + 4]
+        if len(value) == 4:
+            loads.setdefault(function, []).append((int(match.group(1), 16), symbol, value))
+    return loads
+
+
+def literal_target(value: bytes, instruction: int, loads: list[tuple[int, str, bytes]]) -> str | None:
+    """Never substitute a different bit pattern, including signed zero or a nearby rounded float."""
+    matching = [entry for entry in loads if entry[2] == value]
+    return min(matching, key=lambda entry: (abs(entry[0] - instruction), entry[0]))[1] if matching else None
 
 
 class Elf:
@@ -94,7 +128,7 @@ def fix(obj: Path, asm: Path) -> tuple[int, list[str]]:
     # function symbol of each code section (CodeWarrior emits one .text section per function)
     # (Elf32_Sym: name, value, size, info, other, shndx; type STT_FUNC = 2)
     funcs = {s[5]: names[k] for k, s in enumerate(syms) if s[3] & 0xF == 2 and s[1] == 0}
-    targets = gp_targets(asm)
+    loads = pooled_loads(asm, ORIG_ROM.read_bytes(), known) if ORIG_ROM.exists() else {}
     new_syms, strings = [], bytearray(elf.data(strtab))
     index = {n: k for k, n in enumerate(names) if n}
     fixed, warnings = 0, []
@@ -109,15 +143,28 @@ def fix(obj: Path, asm: Path) -> tuple[int, list[str]]:
                 continue
             func = funcs.get(h[7])
             base = func_address(func, known) if func else None
-            target = targets.get(base + off) if base is not None else None
+            symbol = syms[info >> 8]
+            target = None
+            if base is not None and 0 < symbol[5] < len(elf.sh):
+                instruction = struct.unpack_from("<I", elf.data(h[7]), off)[0]
+                addend = instruction & 0xFFFF
+                if addend & 0x8000:
+                    addend -= 0x10000
+                offset = symbol[1] + addend
+                value = elf.data(symbol[5])[offset:offset + 4] if offset >= 0 else b""
+                if len(value) == 4:
+                    target = literal_target(value, base + off, loads.get(func, []))
             if target is None:
-                warnings.append(f"{obj}: literal at {func or '?'}+0x{off:X} has no original %gp_rel load; left as is")
+                warnings.append(f"{obj}: literal at {func or '?'}+0x{off:X} has no verified original value; left as is")
                 continue
             if target not in index:
                 index[target] = len(syms) + len(new_syms)
                 new_syms.append(struct.pack("<IIIBBH", len(strings), 0, 0, 0x10, 0, 0))  # GLOBAL NOTYPE UNDEF
                 strings += target.encode() + b"\0"
             struct.pack_into("<I", rel, k * 8 + 4, (index[target] << 8) | R_MIPS_GPREL16)
+            # The selected label already addresses symbol+addend's value. Carrying the old addend into
+            # the new relocation would load a different word from the shared pool.
+            struct.pack_into("<I", elf.d, elf.sh[h[7]][4] + off, instruction & 0xFFFF0000)
             fixed += 1
         if fixed > before:
             elf.replace(i, bytes(rel))

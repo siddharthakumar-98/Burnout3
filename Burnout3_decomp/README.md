@@ -9,16 +9,17 @@ The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech
 useful matches; full vendor-library reconstruction is outside the game-source completion gate. Game assets are
 never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing them.
 
-> **Status:** D4 (core infrastructure) done apart from a tail of 6 near-misses; D5 next. The compiler is identified (CodeWarrior 3.0.1 build 119,
-> `-O4 -str readonly -Cpp_exceptions off`), and 66 functions in 21 C/C++ files compile to the original bytes and are
+> **Status:** D4 (core infrastructure) done with a tail of 6; D5 (main loop/game flow) done under the roadmap's
+> tail policy with [10 unmatched functions](docs/d5.md#recorded-tail). D6 is next. The compiler is identified (CodeWarrior 3.0.1 build 119,
+> `-O4 -str readonly -Cpp_exceptions off`), and 82 functions in 26 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
-> the game progress category contains 371 units including C carves and static initializers. Each unit has its own
-> slices of `.data`, `.rodata`, `.sdata`, `.sbss` and `.bss`. The current report has **78 / 5,654 game functions**
-> matched (1.38%), covering **11,444 / 2,674,804 code bytes** (0.43%). [PROGRESS.md](PROGRESS.md) and the visual map
+> the game progress category contains 378 units including C carves and static initializers. Units have assembly
+> data slices; text carves can share their original unit's data. The current report has **129 / 5,654 game functions**
+> matched (2.28%), covering **20,096 / 2,674,804 code bytes** (0.75%). [PROGRESS.md](PROGRESS.md) and the visual map
 > track only game code; preserved dependencies are outside their denominator. Burnout 2's
 > DWARF-named decomp has counterparts for Burnout 3's core code ([docs/burnout2.md](docs/burnout2.md)); the pool,
 > file system and load queue now carry Criterion's names (`GtLList`, `CGTFileSystem`, `CAsyncLoadManager`). The full build still
-> reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
+> reproduces the original SHA-1; boot/race behavior was verified in the earlier PCSX2 checks. See [../ROADMAP.md](../ROADMAP.md) for
 > milestones and [docs/layout.md](docs/layout.md) for the memory layout.
 
 ## Supported build

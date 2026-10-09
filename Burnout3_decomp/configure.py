@@ -75,7 +75,17 @@ C_UNITS = {
     "d4/memmgr": {"linked": True},  # its data (arena, instance, .sbss words, vtable) stays in assembly for now
     "d4/ustring": {"linked": False},  # 12 of 14 at 100%; ustrFromFloat, ustrFromFloatNoSep remain (docs/d4.md)
     # D5: main loop and game flow (docs/d5.md)
+    "d5/boot": {"linked": True},
     "d5/unit_00131AC0": {"linked": True},  # its .sdata (0.4f, 1.0f) stays in assembly for now
+    "d5/unit_00131D20": {"linked": False},
+    "d5/mode_base": {"linked": False},
+    "d5/play_mode": {"linked": True},
+    "d5/play_transition": {"linked": True},
+    "d5/network_mode": {"linked": False},
+    "d5/frontend_flow": {"linked": False},  # audio/drawing drafts in this file belong to D10
+    "d4/gamemode": {"linked": False},  # two-player mode, recovered early during D4
+    "d5/preview_exit": {"linked": True},
+    "d5/preview_flow": {"linked": False},
 }
 
 LD_SCRIPT_SPLAT = BUILD / f"{BASENAME}.ld"

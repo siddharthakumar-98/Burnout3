@@ -17,7 +17,7 @@ recovering an interface from scratch. Optional library matches use their own com
 1. Carve the function(s) out of their `game/unit_<VRAM>` in `../assembly/splat/b3.yaml`, and name the remainder
    after them `game/unit_<VRAM>`. CodeWarrior functions always start on 16-byte boundaries, so the unit's start
    and end are too. (`tools/tusplit.py --yaml` regenerates the game units but keeps `d2/`, `d3/` and `d4/` carves, and the
-   boundaries set by hand in its `FORCED_CUTS` and `MERGES`.)
+   boundaries set by hand in its `FORCED_CUTS` and `MERGES`; `d5/` carves also survive.)
 2. Write the C/C++ in `src/` with the same path.
 3. Iterate with `tools/dock python3 tools/funcmatch.py <function> c_cpp/src/<unit>.c` until it reports 100%.
 4. Add the unit to `C_UNITS` in `../configure.py` with `linked: True`. If it owns data, such as a switch's jump
@@ -89,4 +89,27 @@ compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
 | `src/d4/memmgr.cpp` | `0x222300` | memory manager (the heap object's vtable), arena layout | 7/7, linked |
 | `src/d4/loadqueue.cpp` | `unit_0013CE20` | Criterion's `CAsyncLoadManager` | 3/5 |
 | `src/d4/func_00130BF0.c`, `func_001AB010.c` | `0x130BF0`, `0x1AB010` | first VU0 functions (helpers in `include/vu0.h`) | 100%, linked |
-| `src/d4/gamemode.cpp` | first part of `unit_0013C940` | a game mode (D5 work, matched early) | 8/9 |
+| `src/d4/gamemode.cpp` | `d4/gamemode`, `0x13C940` | two-player mode (D5 work, matched early) | 8/9, registered but not linked |
+
+## D5 units (main loop and game flow)
+
+D5 is closed under the roadmap's tail policy: **51/61 lifecycle/helper functions match, 16 are linked, and ten
+unmatched functions remain**. The whole project has 129 matched game functions, 82 linked. The complete executable
+still reproduces the original SHA-1. [The D5 log](../docs/d5.md) records layouts, boundaries, individual tail scores
+and the D6/D10 presentation routines outside this lifecycle inventory.
+
+| Source | What | Status |
+|---|---|---|
+| `src/d5/boot.cpp` | game entry and boot/load/main-loop polling | 1/1, linked |
+| `src/d5/unit_00131AC0.cpp` | startup, separators, rate scaling and current-mode test | 4/4, linked |
+| `src/d5/unit_00131D20.cpp` | game object, init, frame state machine, load and shutdown | 14/16 |
+| `src/d5/mode_base.cpp` | shared mode lifecycle and player/opponent/traffic setup | 3/4 |
+| `src/d5/play_mode.cpp`, `src/d5/play_transition.cpp` | single-player lifecycle and loading/transitions | 10/10, linked |
+| `src/d5/network_mode.cpp` | network mode lifecycle | 3/4; drawing remains assembly |
+| `src/d4/gamemode.cpp` | two-player lifecycle | 8/9 |
+| `src/d5/preview_exit.cpp`, `src/d5/preview_flow.cpp` | model-preview exit, load and init | 2/3; exit linked |
+| `src/d5/frontend_flow.cpp` | frontend/movie lifecycle and stage loading | 6/10 D5; two further drafts belong to D10 |
+
+Draft units compile for comparison and progress reporting, while `linked: False` retains their original assembly.
+Float retargeting verifies the exact literal bits against the original function's pool loads; incorrect or
+unverified constants are left unchanged with a warning (`tools/test_litfix.py`).

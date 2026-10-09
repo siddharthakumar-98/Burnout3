@@ -46,20 +46,31 @@ public:
     virtual void unk90();
     virtual void unk94();
     virtual void unk98();
-    virtual void unk9C();
+    virtual s32 unk9C();
     virtual void unkA0();
     virtual void unkA4();
     virtual void unkA8();
     virtual s32 unkAC();   /* vtable +0xAC */
 };
 
-/* A game mode (state of the top-level state machine). The base class lives in game/unit_00134570
- * (func_00134600, func_00134660, func_001346C0, func_00134910); the modes are members of one big global object
+/* A game mode (state of the top-level state machine). Shared lifecycle helpers are at
+ * 0x134600-0x134930; the modes are members of one big global object
  * whose vtables sinit installs (this unit's vtable D_004DDD90). */
 struct GameMode {
-    u8 pad0[0x1B4];
+    u64 sceneHash;         /* 0x00 */
+    u64 playerHash[2];     /* 0x08 */
+    u64 opponentHash[5];   /* 0x18 */
+    u64 trafficHash[5];    /* 0x40 */
+    u64 unk68;            /* 0x68 */
+    s32 playerType[2];    /* 0x70 */
+    s32 opponentType[5];  /* 0x78 */
+    s32 trafficType[5];   /* 0x8C */
+    s32 playerCount;      /* 0xA0 */
+    s32 opponentCount;    /* 0xA4 */
+    s32 trafficCount;     /* 0xA8 */
+    u8 padAC[0x1B4 - 0xAC];
     GameModeTarget *target; /* 0x1B4 */
-    s32 unk1B8;             /* 0x1B8 */
+    GameModeTarget *aux;    /* 0x1B8 */
     u8 unk1BC;              /* 0x1BC */
 };
 
@@ -86,6 +97,10 @@ void func_0013C990(GameMode *self);
 void func_0013C9A0(GameMode *self);
 
 s32 func_0013CBB0(void); /* returns 0; shared slot of other vtables */
+void func_00134600(GameMode *self);
+void func_00134660(GameMode *self);
+s32 func_001346C0(GameMode *self);
+void func_00134910(GameMode *self);
 
 #ifdef __cplusplus
 }
