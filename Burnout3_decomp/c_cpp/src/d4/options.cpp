@@ -3,23 +3,11 @@
 
 #include "options.h"
 #include "vdb.h"
-
-/* A file opened through the file system (game/unit_00212580). The vtable's first two words are MW's header. */
-class FsFile {
-public:
-    virtual void unk08();                     /* vtable +0x08 */
-    virtual void close();                     /* vtable +0x0C */
-    virtual s32 read(void *buf, s32 size);    /* vtable +0x10 */
-
-    /* 0x00 vtable */
-    s32 unk4; /* 0x04 */
-    s32 size; /* 0x08 */
-};
+#include "fs.h"
 
 extern "C" {
 
 void *memset(void *dst, int c, u32 n);
-FsFile *fsDeviceOpen(void *fs, const char *path, int mode);
 void func_0028AC80(void *obj, float volume);
 void func_003F8890(void *obj, float volume);
 void func_003F8870(void *obj, int on);
@@ -114,14 +102,14 @@ void func_0021B820(void)
 /* Reads the tuning database file into db + 0x10 (a VdbDatabase) and applies it. */
 int func_0021B830(void *db, const char *path, void *fs)
 {
-    FsFile *f;
+    CGTFile *f;
 
     if (path != 0) {
-        f = fsDeviceOpen(fs, path, 1);
+        f = ((CGTFileSystem *)fs)->Open(path, 1);
         if (f != 0) {
-            f->read((u8 *)db + 0xE540, (f->size + 0x7FF) & ~0x7FF);
+            f->Read((u8 *)db + 0xE540, ((s32)f->mnFileLength + 0x7FF) & ~0x7FF);
             vdbDbLoad((VdbDatabase *)((u8 *)db + 0x10));
-            f->close();
+            f->Close();
         }
     }
     return 1;

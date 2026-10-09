@@ -339,12 +339,13 @@ decimalPoint = 0x004E1938; // type:u16 size:0x4
 plusSign = 0x004E193C; // type:u16 size:0x4
 minusSign = 0x004E1940; // type:u16 size:0x4
 
-// D4: the asynchronous load queue, 24 requests in a ring (c_cpp/src/d4/loadqueue.cpp; names are ours)
-loadQueueCancel = 0x0013CE20; // type:func
-loadQueueAdd = 0x0013CFA0; // type:func
-loadQueueService = 0x0013D250; // type:func
-loadQueueClose = 0x0013D410; // type:func
-loadQueueInit = 0x0013D4D0; // type:func
+// D4: Criterion's CAsyncLoadManager, a ring of 24 load requests (c_cpp/src/d4/loadqueue.cpp). Names from Burnout 2's
+// symbols (docs/burnout2.md); Shutdown is Burnout 3's own (name ours)
+Abort__17CAsyncLoadManagerFUi = 0x0013CE20; // type:func
+QueueLoadRequest__17CAsyncLoadManagerFPCcPbPvUi = 0x0013CFA0; // type:func
+Update__17CAsyncLoadManagerFv = 0x0013D250; // type:func
+Shutdown__17CAsyncLoadManagerFv = 0x0013D410; // type:func
+Init__17CAsyncLoadManagerFv = 0x0013D4D0; // type:func
 
 // D4: the memory manager, vtable 0x4DE030 over the heap object (c_cpp/src/d4/memmgr.cpp; names are ours)
 memMgrSize = 0x00222300; // type:func
@@ -358,15 +359,16 @@ memMgrMallocBlock = 0x004E293C; // type:u32 size:0x4
 memMgrArena = 0x004E2940; // type:u32 size:0x4
 theMemMgr = 0x01D6D880; // type:u8 size:0xA00
 
-// D4: d4/pool, fixed-size pool with a free list (c_cpp/src/d4/pool.c; names are ours)
-poolListFreeAll = 0x002B6C40; // type:func
-poolListFree = 0x002B6CA0; // type:func
-poolListMove = 0x002B6D20; // type:func
-poolListAlloc = 0x002B6DA0; // type:func
-poolListInit = 0x002B6E10; // type:func
-poolSortFree = 0x002B6E20; // type:func
-poolBufferSize = 0x002B6EC0; // type:func
-poolInit = 0x002B6EF0; // type:func
+// D4: d4/pool, Criterion's GtLList link pool (c_cpp/src/d4/pool.cpp). Names from Burnout 2's symbols (docs/burnout2.md);
+// the parameter types of the last two are ours (Burnout 2: __Fiii and __FP14GtLListPoolTagPviiiPv)
+GtLListRemoveAllLinks__FP10GtLListTag = 0x002B6C40; // type:func
+GtLListRemoveLink__FP10GtLListTagP11GtLLLinkTag = 0x002B6CA0; // type:func
+GtLListTakeLinkFromList__FP10GtLListTagP11GtLLLinkTagP10GtLListTag = 0x002B6D20; // type:func
+GtLListAddLink__FP10GtLListTag = 0x002B6DA0; // type:func
+GtLListInitialise__FP10GtLListTagP14GtLListPoolTag = 0x002B6E10; // type:func
+GtLListPoolSortFree__FP14GtLListPoolTag = 0x002B6E20; // type:func
+GtLListPoolCalculateSize__FUiUiUi = 0x002B6EC0; // type:func
+GtLListPoolCreateInMemory__FP14GtLListPoolTagUiUiUiPCvPv = 0x002B6EF0; // type:func
 
 // D4: d4/vdb, the tuning-variable registry (c_cpp/src/d4/vdb.cpp; names are ours)
 vdbSetDatabase = 0x0021B8C0; // type:func
@@ -394,26 +396,27 @@ vtVdbDatabase = 0x004DE0F0; // type:u32 size:0x20
 ustrFormat = 0x00212E30; // type:func
 ustrFmtScan = 0x00213050; // type:func
 
-// D4: d4/fs, the file system and its RenderWare file interface (c_cpp/src/d4/fs.cpp; names are ours)
-fsRwTell = 0x00212580; // type:func
-fsRwExists = 0x00212590; // type:func
-fsRwFlush = 0x002125E0; // type:func
-fsRwSeek = 0x002125F0; // type:func
-fsRwEof = 0x00212670; // type:func
-fsRwPuts = 0x00212690; // type:func
-fsRwGets = 0x002126E0; // type:func
-fsRwWrite = 0x002126F0; // type:func
-fsRwRead = 0x00212730; // type:func
-fsRwClose = 0x00212770; // type:func
-fsRwOpen = 0x002127A0; // type:func
-fsDeviceOpen = 0x00212890; // type:func
-fsDeviceInit = 0x002129A0; // type:func
-fsSetDefaultDevice = 0x00212A70; // type:func
-fsJoinPath = 0x00212A80; // type:func
-fsSkipDevicePrefix = 0x00212B80; // type:func
-fsFindDevice = 0x00212BD0; // type:func
-fsInstallRwFileInterface = 0x00212CB0; // type:func
-fsNumDevices = 0x004E28C4; // type:u32 size:0x4
-fsRwInstalled = 0x004E28C8; // type:u32 size:0x4
-fsDefaultDevice = 0x004E28CC; // type:u32 size:0x4
-fsDevices = 0x004E28D0; // type:u32 size:0x8
+// D4: d4/fs, Criterion's CGTFileSystem (c_cpp/src/d4/fs.cpp). Names from Burnout 2's debug info (docs/burnout2.md);
+// FTell is Burnout 3's own. Mangled names come from our declarations; FOpen, FExist, FWrite, Open and Init equal Burnout 2's.
+FTell__13CGTFileSystemFPv = 0x00212580; // type:func
+FExist__13CGTFileSystemFPCc = 0x00212590; // type:func
+FFlush__13CGTFileSystemFPv = 0x002125E0; // type:func
+FSeek__13CGTFileSystemFPvii = 0x002125F0; // type:func
+FEof__13CGTFileSystemFPv = 0x00212670; // type:func
+FPuts__13CGTFileSystemFPCcPv = 0x00212690; // type:func
+FGets__13CGTFileSystemFPciPv = 0x002126E0; // type:func
+FWrite__13CGTFileSystemFPCvUiUiPv = 0x002126F0; // type:func
+FRead__13CGTFileSystemFPvUiUiPv = 0x00212730; // type:func
+FClose__13CGTFileSystemFPv = 0x00212770; // type:func
+FOpen__13CGTFileSystemFPCcPCc = 0x002127A0; // type:func
+Open__13CGTFileSystemFPCcUi = 0x00212890; // type:func
+Init__13CGTFileSystemFUiPCc = 0x002129A0; // type:func
+SetAsDefaultFilesystem__13CGTFileSystemFv = 0x00212A70; // type:func
+BuildFileName__13CGTFileSystemFPciPCcPCcc = 0x00212A80; // type:func
+GetFileNameFromDeviceName__13CGTFileSystemFPCc = 0x00212B80; // type:func
+GetFileSystemFromFileName__13CGTFileSystemFPCc = 0x00212BD0; // type:func
+InstallToRenderWare__13CGTFileSystemFv = 0x00212CB0; // type:func
+mnNumFilesystems__13CGTFileSystem = 0x004E28C4; // type:u32 size:0x4
+mbInstalledToRW__13CGTFileSystem = 0x004E28C8; // type:u32 size:0x4
+mpDefaultFilesystem__13CGTFileSystem = 0x004E28CC; // type:u32 size:0x4
+mpaFilesystems__13CGTFileSystem = 0x004E28D0; // type:u32 size:0x8

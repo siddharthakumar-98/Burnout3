@@ -13,7 +13,7 @@ are allowed. In .data and .rodata they are snapped to 16-byte boundaries, becaus
 items relative to the start of its file; .sdata needs 4-byte boundaries, and .sbss/.bss (only .space) none. An
 item no code references goes with the next unit when it starts on an 8-byte boundary after the previous unit's
 last referenced item, since every unit's data starts aligned; otherwise it stays with the previous unit. Data
-slices that b3.yaml already carves for C units (d2/, d3/, d4/) are kept exactly, and FORCED_CUTS (slice starts set by
+slices that b3.yaml already carves for C units (d2/ to d5/) are kept exactly, and FORCED_CUTS (slice starts set by
 hand) override the model.
 
 .vtables (CodeWarrior's section for C++ vtables, `{RTTI*, 0, methods...}`) is in link order too. A vtable goes to
@@ -51,7 +51,7 @@ VTABLES_END = 0x4E0610  # pointer to _start and padding, after the last vtable
 LIT4 = 0x4E0680    # .lit4: linker-pooled float literals, 0x4E0680-0x4E1400 (padded to 0x80)
 COMMON = 0x1ECE340  # COMMON symbols of the ee-gcc libraries, to the end of .bss
 NOLOAD = ("sbss", "bss")
-CARVED = ("d2/", "d3/", "d4/")  # units carved out of the game units for C (C_UNITS in configure.py)
+CARVED = ("d2/", "d3/", "d4/", "d5/")  # units carved out of the game units for C (C_UNITS in configure.py)
 # Slice starts settled by hand where the references mislead: (stream, VRAM) -> (unit whose slice starts there,
 # reason). Cuts the model makes for that unit around it are dropped.
 FORCED_CUTS: dict[tuple[str, int], tuple[str, str]] = {
@@ -143,7 +143,7 @@ def assign(items: list[int], users: dict[int, set[int]], nunits: int) -> list[in
 
 
 def unit_index(units: list[tuple[int, str]]):
-    """Function address -> rank among the units that own data. C units (d2/, d3/, d4/) own only their carved slices,
+    """Function address -> rank among the units that own data. C units (d2/ to d5/) own only their carved slices,
     so their references count for the unit before them."""
     starts = [a for a, _ in units]
     owners = [k for k, (_, name) in enumerate(units) if not name.startswith(CARVED)]

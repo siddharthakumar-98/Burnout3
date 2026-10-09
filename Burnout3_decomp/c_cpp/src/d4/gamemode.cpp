@@ -1,4 +1,4 @@
-/* game/unit_0013C940 (0x13C940-0x13CE20): a game mode, derived from the base mode in game/unit_00134570 (D5 work,
+/* d4/gamemode (0x13C940-0x13CE20): a two-player game mode, using shared lifecycle helpers at 0x134600-0x134930 (D5 work,
  * matched while looking for the load queue that follows it). C++ for the virtual calls on the mode's target (they
  * load the slot into $t9); the mode's virtual methods keep their func_ names: they are written as extern "C"
  * functions taking `self` (same code as methods), and the vtable is emitted as plain data. */
@@ -7,7 +7,7 @@
 
 extern "C" {
 
-/* base mode (game/unit_00134570) */
+/* Shared base-mode lifecycle (d5/mode_base). */
 void func_00134600(GameMode *self);
 void func_00134660(GameMode *self);
 s32 func_001346C0(GameMode *self);
@@ -209,6 +209,6 @@ void func_0013CDD0(GameModeC940 *self)
     }
 }
 
-/* loadQueueCancel (0x13CE20) onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
+/* CAsyncLoadManager::Abort (0x13CE20) onward is the load queue, another file (c_cpp/src/d4/loadqueue.cpp). */
 
 }

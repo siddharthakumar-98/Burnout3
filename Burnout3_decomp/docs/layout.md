@@ -180,8 +180,10 @@ function, literals not seen before take consecutive addresses in instruction ord
 literals by value in order of first use while relocating, deduplicating only partly (`0.001f` appears ten times).
 That order can't be reproduced from objects, so `.lit4` stays one shared piece and C units keep using it:
 `tools/litfix.py` (run by the build after every compile, and by `funcmatch.py`) retargets each `R_MIPS_LITERAL`
-relocation at the label the original instruction at the same address loads (`%gp_rel(D_004E0D80)`), turning it into
-an ordinary `R_MIPS_GPREL16`. The object's own `.lit4` copies are then unreferenced and discarded.
+relocation at a pool label loaded by the original function with the same four-byte value, turning it into
+an ordinary `R_MIPS_GPREL16` and clearing the resolved addend. The original instruction's label is preferred
+when its value agrees; a moved draft load uses the nearest equal original value. Unverified literals retain their
+original relocation and produce a warning. The object's verified `.lit4` copies are unreferenced and discarded.
 `d3/func_002527F0` and `d3/func_003EA7E0` prove it: both load a pooled literal and are linked from C.
 
 **`.sdata`/`.sbss`.** CodeWarrior emits each small variable in a section of its own (`.sdata` when initialized,

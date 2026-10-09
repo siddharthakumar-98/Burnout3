@@ -86,7 +86,9 @@ small-data map in [layout.md](layout.md#small-data-and-the-lit4-pool) rests on:
 
 Every variable and every literal gets a section of its own, and the linker decides the final order. The game's
 linker kept `.sdata`, `.sbss` and `.bss` in link order but pooled `.lit4` across files, so C units keep loading the
-original pooled literals: `tools/litfix.py` retargets their `R_MIPS_LITERAL` relocations after each compile. Double
+original pooled literals: `tools/litfix.py` verifies their four-byte values against the original function's pool
+loads and retargets their `R_MIPS_LITERAL` relocations after each compile. Draft instruction positions may differ;
+an unverified value is left unchanged with a warning (D5 regression tests cover PAL/NTSC values and addends). Double
 arithmetic goes through soft-float helpers (`dpmul`, `dptoli`, …), and the game has no `.lit8` area.
 
 ## Inline assembly (D4)

@@ -2,16 +2,24 @@
 
 **A matching decompilation of Burnout 3: Takedown (PS2, NTSC-U, SLUS-21050).**
 
-The goal is C/C++ source that the original compiler (Metrowerks CodeWarrior for PS2, `MW MIPS C Compiler 2.4.1.01`)
-builds into a byte-identical `SLUS_210.50`. The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech's device libraries. Game assets are
+The goal is to reconstruct **Burnout 3's game code** as C/C++ that CodeWarrior PS2 3.0.1 build 119 compiles to the
+original bytes. The complete `SLUS_210.50` still builds byte-identically, with vendor libraries preserved in assembly.
+The game is C++ on top of RenderWare 3.6, Sony libsce, EA DirtySock and Logitech device libraries. Use
+[existing source and decompilation references](docs/library-references.md) to recover their interfaces and guide
+useful matches; full vendor-library reconstruction is outside the game-source completion gate. Game assets are
 never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing them.
 
-> **Status:** D4 (core infrastructure) in its tail. The compiler is identified (CodeWarrior 3.0.1 build 119,
-> `-O4 -str readonly -Cpp_exceptions off`), and 66 functions in 21 C/C++ files compile to the original bytes and are
+> **Status:** D4 (core infrastructure) done with a tail of 6; D5 (main loop/game flow) done under the roadmap's
+> tail policy with [10 unmatched functions](docs/d5.md#recorded-tail). D6 is next. The compiler is identified (CodeWarrior 3.0.1 build 119,
+> `-O4 -str readonly -Cpp_exceptions off`), and 82 functions in 26 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
-> game code is split into 347 provisional translation units (plus the files carved out for C), and each unit has its own slices of `.data`, `.rodata`,
-> `.sdata`, `.sbss` and `.bss`. Progress is reported per category in [PROGRESS.md](PROGRESS.md). The full build still
-> reproduces the original SHA-1, and the rebuilt ELF boots and runs in PCSX2. See [../ROADMAP.md](../ROADMAP.md) for
+> the game progress category contains 378 units including C carves and static initializers. Units have assembly
+> data slices; text carves can share their original unit's data. The current report has **129 / 5,654 game functions**
+> matched (2.28%), covering **20,096 / 2,674,804 code bytes** (0.75%). [PROGRESS.md](PROGRESS.md) and the visual map
+> track only game code; preserved dependencies are outside their denominator. Burnout 2's
+> DWARF-named decomp has counterparts for Burnout 3's core code ([docs/burnout2.md](docs/burnout2.md)); the pool,
+> file system and load queue now carry Criterion's names (`GtLList`, `CGTFileSystem`, `CAsyncLoadManager`). The full build still
+> reproduces the original SHA-1; boot/race behavior was verified in the earlier PCSX2 checks. See [../ROADMAP.md](../ROADMAP.md) for
 > milestones and [docs/layout.md](docs/layout.md) for the memory layout.
 
 ## Supported build
@@ -116,6 +124,11 @@ The decomp has two sides plus shared files at the top level.
 - **funcmatch:** `tools/dock python3 tools/funcmatch.py <function> <file.c> [-f=FLAGS ...] [-c compilers/<version>]`
   compiles one function, compares it with the original through objdiff, and shows an instruction diff when it
   doesn't match.
+
+Run `tools/dock python3 tools/progress.py` after a successful build to regenerate the game-only progress table,
+map and badge. The complete objdiff report retains every library category for diagnostics. Vendor-source reuse
+does not add game progress or permit a nonmatching implementation to replace preserved assembly. Keep native
+assembly and VU microcode as assembly, and leave the Rust rewrite deferred while this PS2 milestone is active.
 
 ## Legal
 

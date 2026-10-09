@@ -1,189 +1,215 @@
-/* Tail of game/unit_0013C940: the asynchronous load queue. Requests go into a ring of 24; the service function
- * opens the request at head, starts its read, and closes it once the file is idle again.
- * C++ for the virtual calls on the file (they load the slot into $t9); the functions keep their func_ names. */
+/* Tail of game/unit_0013C940: Criterion's CAsyncLoadManager (Burnout 2: CAsyncLoadManager.cpp). Requests go into a
+ * ring of 24; Update opens the request at head, starts its read, and closes it once the file is idle again. */
 
 #include "loadqueue.h"
 
 extern "C" {
-
 char *strcpy(char *dst, const char *src);
 void func_001D3FA0(void *p);
 
 extern u8 D_004EE040[];
-extern FsDevice *D_004F60C0[]; /* device the queue loads from (0x4EE040 + 0x8080) */
+extern CGTFileSystem *D_004F60C0[]; /* gpGTFileSystem: the device the manager loads from (0x4EE040 + 0x8080) */
+}
 
-/* Cancel request id: abort it if it is being loaded, else free it.
- * Best 98.97%: the original hoists the 24 of the search loop into a register in a preheader (i in a3, tail in a2);
- * do/for/goto loops, a tail local and if/else entry forms all give the same unhoisted loop. */
-s32 loadQueueCancel(LoadQueue *q, s32 id)
+/* Abort request lnRequestID: abort the read if it is the one being loaded, else free it. */
+s32 CAsyncLoadManager::Abort(u32 lnRequestID)
 {
-    s32 i = q->head;
+    u32 idx = munHead;
+    u32 activeID = maRequests[idx].munId;
+    u32 nextReq;
 
-    if (q->req[i].id == id) {
-        if (q->file != 0 && (q->file->status() == 2 || q->file->status() == 3)) {
-            q->file->unk20();
+    if (lnRequestID == activeID) {
+        if (mpCurrentStream != 0) {
+            if (mpCurrentStream->GetStatus() == 2 || mpCurrentStream->GetStatus() == 3) {
+                mpCurrentStream->Abort();
+            }
         }
-        q->finished = 1;
-        q->opened = 0;
+        mbAbortInProgress = 1;
+        mbPendingRead = 0;
         return 1;
     }
-    if (i == q->tail && q->req[i].id == 0) {
+
+    if (idx == munTail && activeID == 0) {
         return 0;
     }
+
+    nextReq = munTail;
     do {
-        if (++i == LOADQUEUE_SIZE) {
-            i = 0;
+        idx = idx + 1;
+        if (idx == ASYNCLOAD_MAX_REQUESTS) {
+            idx = 0;
         }
-        if (q->req[i].id == id) {
-            q->req[i].id = 0;
-            if (i == q->tail) {
-                while (q->req[q->tail].id == 0 && q->tail != q->head) {
-                    if (q->tail == 0) {
-                        q->tail = LOADQUEUE_SIZE;
+
+        if (lnRequestID == maRequests[idx].munId) {
+            maRequests[idx].munId = 0;
+            if (idx == munTail) {
+                while (maRequests[munTail].munId == 0 && munTail != munHead) {
+                    if (munTail == 0) {
+                        munTail = ASYNCLOAD_MAX_REQUESTS;
                     }
-                    q->tail--;
+                    munTail = munTail - 1;
                 }
             }
             return 1;
         }
-    } while (i != q->tail);
+    } while (idx != nextReq);
+
     return 0;
 }
 
-/* Queue a load of path into buf; *done becomes 1 when it has been read. Returns the request id, 0 if full.
- * Best 99.67%: in the squeeze loop the original keeps &req[src] in a0 and &req[src].id in v1; ours swaps them. */
-s32 loadQueueAdd(LoadQueue *q, const char *path, u8 *done, void *buf, u32 size)
+/* Queue a load of filename into pBuffer; *pComplete becomes 1 when it has been read. Returns the request id, 0 if
+ * the ring is full.
+ * Best 99.67%: in the squeeze loop the original keeps &maRequests[src] in a0 and &maRequests[src].munId in v1; ours
+ * swaps them (index types, loop forms, copy forms and declaration order tried). */
+u32 CAsyncLoadManager::QueueLoadRequest(const char *filename, bool *pComplete, void *pBuffer, u32 bufferSize)
 {
-    s32 id = q->req[q->tail].id;
-    s32 src;
-    s32 dst;
-
-    if (id != 0) {
+    /* If the current next-request slot is active, scan for a free one */
+    if (maRequests[munTail].munId != 0) {
         do {
-            q->tail++;
-            if (q->tail == LOADQUEUE_SIZE) {
-                q->tail = 0;
+            munTail = munTail + 1;
+            if (munTail == ASYNCLOAD_MAX_REQUESTS) {
+                munTail = 0;
             }
-            id = q->req[q->tail].id;
-        } while (id != 0 && q->tail != q->head);
+        } while (maRequests[munTail].munId != 0 && munTail != munHead);
     }
-    if (id != 0) {
-        /* no free request after the tail: squeeze out the freed ones */
-        src = q->head + 1;
-        if (src == LOADQUEUE_SIZE) {
+
+    /* If still no free slot, compact the queue to remove holes */
+    if (maRequests[munTail].munId != 0) {
+        s32 src = munHead + 1;
+        s32 dst;
+
+        if (src == ASYNCLOAD_MAX_REQUESTS) {
             src = 0;
         }
         dst = src;
-        while (src != q->head) {
-            while (q->req[src].id == 0 && src != q->head) {
-                if (++src == LOADQUEUE_SIZE) {
+
+        while (src != (s32)munHead) {
+            while (maRequests[src].munId == 0 && src != (s32)munHead) {
+                src = src + 1;
+                if (src == ASYNCLOAD_MAX_REQUESTS) {
                     src = 0;
                 }
             }
+
             if (dst != src) {
-                q->req[dst] = q->req[src];
+                maRequests[dst] = maRequests[src];
             }
-            if (++src == LOADQUEUE_SIZE) {
+
+            src = src + 1;
+            if (src == ASYNCLOAD_MAX_REQUESTS) {
                 src = 0;
             }
-            if (++dst == LOADQUEUE_SIZE) {
+            dst = dst + 1;
+            if (dst == ASYNCLOAD_MAX_REQUESTS) {
                 dst = 0;
             }
         }
-        if (dst == q->head) {
+
+        if (dst == (s32)munHead) {
             return 0;
         }
-        q->tail = dst;
+        munTail = dst;
     }
-    strcpy(q->req[q->tail].path, path);
-    q->req[q->tail].done = done;
-    q->req[q->tail].buf = buf;
-    q->req[q->tail].size = size;
-    q->req[q->tail].id = q->nextId;
-    q->nextId++;
-    if (q->nextId == 0) {
-        q->nextId++;
+
+    /* Store the new request in the free slot */
+    strcpy(maRequests[munTail].macName, filename);
+    maRequests[munTail].mpbCompletionReturn = pComplete;
+    maRequests[munTail].mpBuffer = pBuffer;
+    maRequests[munTail].munReadLen = bufferSize;
+    maRequests[munTail].munId = munCurrentId;
+
+    /* Advance the request id, skipping 0 (free) */
+    munCurrentId = munCurrentId + 1;
+    if (munCurrentId == 0) {
+        munCurrentId = munCurrentId + 1;
     }
-    *q->req[q->tail].done = 0;
-    loadQueueService(q);
-    return q->req[q->tail].id;
+
+    *maRequests[munTail].mpbCompletionReturn = 0;
+    Update();
+
+    return maRequests[munTail].munId;
 }
 
-/* Service the queue: advance past a finished request, open the next one, start its read, close it when idle.
- * Best 97.22%: the open path's `b end` takes the store into its delay slot; the original leaves a nop there. */
-void loadQueueService(LoadQueue *q)
+/* Advance past a finished request, open the next one, start its read, close it when idle.
+ * Best 97.22%: the open path's `b end` takes the mbPendingRead store into its delay slot; the original leaves a nop
+ * there. Burnout 2's flat early-return shape gives 86%; the if/else shape below is closer. */
+void CAsyncLoadManager::Update()
 {
     func_001D3FA0(D_004EE040);
-    if (q->req[q->head].id == 0) {
+
+    if (maRequests[munHead].munId == 0) {
         return;
     }
-    if (q->file != 0) {
-        if (q->file->status() == 2) {
+
+    if (mpCurrentStream != 0) {
+        if (mpCurrentStream->GetStatus() == 2) {
             return;
         }
-        if (q->opened) {
-            q->opened = 0;
-            q->file->read(q->req[q->head].buf, q->req[q->head].size);
+
+        if (mbPendingRead != 0) {
+            mbPendingRead = 0;
+            mpCurrentStream->Read(maRequests[munHead].mpBuffer, maRequests[munHead].munReadLen);
         } else {
-            q->file->close();
-            q->file = 0;
-            if (q->finished == 0) {
-                *q->req[q->head].done = 1;
-                q->finished = 1;
+            mpCurrentStream->Close();
+            mpCurrentStream = 0;
+
+            if (mbAbortInProgress == 0) {
+                *maRequests[munHead].mpbCompletionReturn = 1;
+                mbAbortInProgress = 1;
             }
             return;
         }
     } else {
-        if (q->finished) {
-            q->finished = 0;
-            q->req[q->head].id = 0;
-            while (q->head != q->tail && q->req[q->head].id == 0) {
-                q->head++;
-                if (q->head == LOADQUEUE_SIZE) {
-                    q->head = 0;
+        if (mbAbortInProgress != 0) {
+            mbAbortInProgress = 0;
+            maRequests[munHead].munId = 0;
+            while (munHead != munTail && maRequests[munHead].munId == 0) {
+                munHead = munHead + 1;
+                if (munHead == ASYNCLOAD_MAX_REQUESTS) {
+                    munHead = 0;
                 }
             }
         }
-        if (q->req[q->head].id != 0) {
-            q->file = fsDeviceOpen(D_004F60C0[0], q->req[q->head].path, 0x11);
-            q->opened = 1;
+        if (maRequests[munHead].munId != 0) {
+            mpCurrentStream = D_004F60C0[0]->Open(maRequests[munHead].macName, 0x11);
+            mbPendingRead = 1;
             return;
         }
     }
 }
 
-/* Close the current file, aborting a read in progress. */
-void loadQueueClose(LoadQueue *q)
+/* Close the current file, aborting a read in progress (not in Burnout 2). */
+void CAsyncLoadManager::Shutdown()
 {
-    if (q->file != 0) {
-        if (q->file->status() == 2) {
-            q->file->unk20();
-            q->file->unk1C(1);
+    if (mpCurrentStream != 0) {
+        if (mpCurrentStream->GetStatus() == 2) {
+            mpCurrentStream->Abort();
+            mpCurrentStream->Sync(1);
         }
-        if (q->file->status() != 0) {
-            q->file->close();
+        if (mpCurrentStream->GetStatus() != 0) {
+            mpCurrentStream->Close();
         }
-        q->file = 0;
+        mpCurrentStream = 0;
     }
 }
 
-void loadQueueInit(LoadQueue *q)
+void CAsyncLoadManager::Init()
 {
     s32 i;
 
-    q->file = 0;
-    q->head = 0;
-    q->tail = 0;
-    q->nextId = 1;
-    for (i = 0; i < LOADQUEUE_SIZE; i++) {
-        q->req[i].path[0] = 0;
-        q->req[i].done = 0;
-        q->req[i].buf = 0;
-        q->req[i].size = 0;
-        q->req[i].id = 0;
-    }
-    q->finished = 0;
-    q->opened = 0;
-}
+    mpCurrentStream = 0;
+    munHead = 0;
+    munTail = 0;
+    munCurrentId = 1;
 
+    for (i = 0; i < ASYNCLOAD_MAX_REQUESTS; i++) {
+        maRequests[i].macName[0] = 0;
+        maRequests[i].mpbCompletionReturn = 0;
+        maRequests[i].mpBuffer = 0;
+        maRequests[i].munReadLen = 0;
+        maRequests[i].munId = 0;
+    }
+
+    mbAbortInProgress = 0;
+    mbPendingRead = 0;
 }
