@@ -74,6 +74,16 @@ C_UNITS = {
     "d4/func_001AB010": {"linked": True},
     "d4/memmgr": {"linked": True},  # its data (arena, instance, .sbss words, vtable) stays in assembly for now
     "d4/ustring": {"linked": False},  # 12 of 14 at 100%; ustrFromFloat, ustrFromFloatNoSep remain (docs/d4.md)
+    # D6: vehicle physics and handling (docs/d6.md)
+    "d6/transmission_init": {"linked": True},
+    "d6/transmission_rpm": {"linked": False},
+    "d6/transmission_update": {"linked": False},
+    "d6/vehicle_resource": {"linked": True},
+    "d6/vehicle_shutdown": {"linked": True},
+    "d6/vehicle_reset": {"linked": True},
+    "d6/vehicle_body_state": {"linked": True},
+    "d6/vehicle_collision": {"linked": True},
+    "d6/vehicle_timer": {"linked": True},
     # D5: main loop and game flow (docs/d5.md)
     "d5/boot": {"linked": True},
     "d5/unit_00131AC0": {"linked": True},  # its .sdata (0.4f, 1.0f) stays in assembly for now
@@ -123,6 +133,7 @@ CATEGORIES = {
     "d3": ("game", None),
     "d4": ("game", None),
     "d5": ("game", None),
+    "d6": ("game", None),
     "sinit": ("game", None),
     "rw": ("rw", "RenderWare 3.6"),
     "rwa": ("rwa", "RenderWare Audio (EE side)"),

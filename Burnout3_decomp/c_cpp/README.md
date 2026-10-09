@@ -17,7 +17,7 @@ recovering an interface from scratch. Optional library matches use their own com
 1. Carve the function(s) out of their `game/unit_<VRAM>` in `../assembly/splat/b3.yaml`, and name the remainder
    after them `game/unit_<VRAM>`. CodeWarrior functions always start on 16-byte boundaries, so the unit's start
    and end are too. (`tools/tusplit.py --yaml` regenerates the game units but keeps `d2/`, `d3/` and `d4/` carves, and the
-   boundaries set by hand in its `FORCED_CUTS` and `MERGES`; `d5/` carves also survive.)
+   boundaries set by hand in its `FORCED_CUTS` and `MERGES`; `d5/` and `d6/` carves also survive.)
 2. Write the C/C++ in `src/` with the same path.
 3. Iterate with `tools/dock python3 tools/funcmatch.py <function> c_cpp/src/<unit>.c` until it reports 100%.
 4. Add the unit to `C_UNITS` in `../configure.py` with `linked: True`. If it owns data, such as a switch's jump
@@ -94,7 +94,7 @@ compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
 ## D5 units (main loop and game flow)
 
 D5 is closed under the roadmap's tail policy: **51/61 lifecycle/helper functions match, 16 are linked, and ten
-unmatched functions remain**. The whole project has 129 matched game functions, 82 linked. The complete executable
+unmatched functions remain**. The whole project now has 137 matched game functions, 90 linked after the D6 transmission/vehicle-helper batch. The complete executable
 still reproduces the original SHA-1. [The D5 log](../docs/d5.md) records layouts, boundaries, individual tail scores
 and the D6/D10 presentation routines outside this lifecycle inventory.
 
@@ -113,3 +113,19 @@ and the D6/D10 presentation routines outside this lifecycle inventory.
 Draft units compile for comparison and progress reporting, while `linked: False` retains their original assembly.
 Float retargeting verifies the exact literal bits against the original function's pool loads; incorrect or
 unverified constants are left unchanged with a warning (`tools/test_litfix.py`).
+
+## D6 units (vehicle physics and handling, in progress)
+
+| Source | What | Status |
+|---|---|---|
+| `src/d6/transmission_init.cpp` | initialize transmission state and find top gear | 1/1, linked |
+| `src/d6/transmission_rpm.cpp` | engine angular-speed selection from forward ratios | 99.13%, unlinked |
+| `src/d6/transmission_update.cpp` | clutch, automatic shifts, rev limiter, torque and boost modulation | 85.78%, unlinked |
+| `src/d6/vehicle_resource.cpp` | release pooled vehicle resource | 1/1, linked |
+| `src/d6/vehicle_shutdown.cpp`, `src/d6/vehicle_reset.cpp` | conditional callback and reset wrapper | 2/2, linked |
+| `src/d6/vehicle_body_state.cpp` | signed body-state transition | 1/1, linked |
+| `src/d6/vehicle_collision.cpp` | select fixed/local collision direction | 2/2, linked |
+| `src/d6/vehicle_timer.cpp` | set vehicle deadline | 1/1, linked |
+
+`include/transmission.h` and `include/vehicle_physics.h` record the recovered retail layouts. [The D6 log](../docs/d6.md)
+tracks evidence, the RPM register mismatch and caller-invariant questions, and the next physics paths.

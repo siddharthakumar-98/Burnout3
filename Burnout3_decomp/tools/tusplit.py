@@ -48,7 +48,7 @@ GAME = [(0x12EB30, 0x1D8260), (0x211C30, 0x215660), (0x216E40, 0x2372F0), (0x23A
 # Libraries CodeWarrior compiled inside the game ranges, found as call-closed regions: nothing inside calls game
 # code outside, while game code calls in (docs/layout.md). (start, end, unit prefix)
 EMBEDDED_LIBS = [(0x290B10, 0x2B52D0, "rwa")]  # RenderWare Audio, EE side
-CARVED = ("d2/", "d3/", "d4/", "d5/")  # units carved out of the game units for C (C_UNITS in configure.py)
+CARVED = ("d2/", "d3/", "d4/", "d5/", "d6/")  # units carved out of the game units for C (C_UNITS in configure.py)
 # Boundaries settled by hand from evidence the model doesn't weigh (callers, what the code does). A forced cut is
 # always a boundary, like an initializer anchor, and is never merged away; a merge removes a boundary the model
 # would make. Function start -> reason.
@@ -360,7 +360,7 @@ def main() -> None:
     sizes = [b - a for a, b in zip(starts, starts[1:] + [len(m.G)])]
     if args.yaml:
         # The .text block of the current b3.yaml: library lines are kept, game lines are replaced, and C units
-        # (d2/ to d5/) stay as carved (each ends where the next .text subsegment starts).
+        # (d2/ to d6/) stay as carved (each ends where the next .text subsegment starts).
         text = []
         for line in (ROOT / "assembly/splat/b3.yaml").read_text().splitlines():
             mm = re.match(r"\s*- \[0x([0-9A-F]+), asm, (\S+)\]", line)
