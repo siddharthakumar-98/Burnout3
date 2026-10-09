@@ -94,7 +94,7 @@ compiler was identified are in [../docs/compiler.md](../docs/compiler.md).
 ## D5 units (main loop and game flow)
 
 D5 is closed under the roadmap's tail policy: **51/61 lifecycle/helper functions match, 16 are linked, and ten
-unmatched functions remain**. The whole project now has 137 matched game functions, 90 linked after the D6 transmission/vehicle-helper batch. The complete executable
+unmatched functions remain**. The whole project now has 141 matched game functions, 94 linked after the D6 collision/body-helper batch. The complete executable
 still reproduces the original SHA-1. [The D5 log](../docs/d5.md) records layouts, boundaries, individual tail scores
 and the D6/D10 presentation routines outside this lifecycle inventory.
 
@@ -126,6 +126,11 @@ unverified constants are left unchanged with a warning (`tools/test_litfix.py`).
 | `src/d6/vehicle_body_state.cpp` | signed body-state transition | 1/1, linked |
 | `src/d6/vehicle_collision.cpp` | select fixed/local collision direction | 2/2, linked |
 | `src/d6/vehicle_timer.cpp` | set vehicle deadline | 1/1, linked |
+| `src/d6/vehicle_activate.cpp`, `src/d6/vehicle_register.cpp` | activation, list registration and initial height | 2/2, linked |
+| `src/d6/vehicle_body_parts.cpp` | one-time batch allocation and single-part state transition | 2/2, linked |
+| `src/d6/vehicle_cache_append.cpp` | append triangle vertices, normal and separate surface tag | 99.67%, unlinked |
+| `src/d6/vehicle_collision_query.cpp` | query sphere, world lookup and optional triangle cache additions | 73.16%, unlinked |
+| `src/d6/vehicle_collision_filter.cpp` | surface-tag, velocity/normal and normal-height filtering | 56.84%, unlinked |
 
 `include/transmission.h` and `include/vehicle_physics.h` record the recovered retail layouts. [The D6 log](../docs/d6.md)
-tracks evidence, the RPM register mismatch and caller-invariant questions, and the next physics paths.
+tracks evidence, the RPM register mismatch and caller-invariant questions, collision matching leads and the next physics paths.

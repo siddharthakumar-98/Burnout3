@@ -84,6 +84,12 @@ C_UNITS = {
     "d6/vehicle_body_state": {"linked": True},
     "d6/vehicle_collision": {"linked": True},
     "d6/vehicle_timer": {"linked": True},
+    "d6/vehicle_activate": {"linked": True},
+    "d6/vehicle_register": {"linked": True},
+    "d6/vehicle_body_parts": {"linked": True},
+    "d6/vehicle_cache_append": {"linked": False},
+    "d6/vehicle_collision_query": {"linked": False},
+    "d6/vehicle_collision_filter": {"linked": False},
     # D5: main loop and game flow (docs/d5.md)
     "d5/boot": {"linked": True},
     "d5/unit_00131AC0": {"linked": True},  # its .sdata (0.4f, 1.0f) stays in assembly for now

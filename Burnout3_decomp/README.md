@@ -11,11 +11,11 @@ never in this repo. The rebuilt ELF runs in PCSX2 with your own disc providing t
 
 > **Status:** D4 (core infrastructure) done with a tail of 6; D5 (main loop/game flow) done under the roadmap's
 > tail policy with [10 unmatched functions](docs/d5.md#recorded-tail). D6 vehicle physics is [in progress](docs/d6.md). The compiler is identified (CodeWarrior 3.0.1 build 119,
-> `-O4 -str readonly -Cpp_exceptions off`), and 90 functions in 33 C/C++ files compile to the original bytes and are
+> `-O4 -str readonly -Cpp_exceptions off`), and 94 functions in 36 C/C++ files compile to the original bytes and are
 > linked in place of their assembly. The binary is mapped: libraries, VU microcode and every section are fenced off,
-> the game progress category contains 393 units including C carves and static initializers. Units have assembly
-> data slices; text carves can share their original unit's data. The current report has **137 / 5,654 game functions**
-> matched (2.42%), covering **20,808 / 2,674,804 code bytes** (0.78%). [PROGRESS.md](PROGRESS.md) and the visual map
+> the game progress category contains 400 units including C carves and static initializers. Units have assembly
+> data slices; text carves can share their original unit's data. The current report has **141 / 5,654 game functions**
+> matched (2.49%), covering **21,304 / 2,674,804 code bytes** (0.80%). [PROGRESS.md](PROGRESS.md) and the visual map
 > track only game code; preserved dependencies are outside their denominator. Burnout 2's
 > DWARF-named decomp has counterparts for Burnout 3's core code ([docs/burnout2.md](docs/burnout2.md)); the pool,
 > file system and load queue now carry Criterion's names (`GtLList`, `CGTFileSystem`, `CAsyncLoadManager`). The full build still
