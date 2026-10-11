@@ -9,6 +9,13 @@ union VehicleVector {
     Vec4 value;
 };
 
+struct VehicleMatrix {
+    VehicleVector right;
+    VehicleVector up;
+    VehicleVector at;
+    VehicleVector position;
+};
+
 struct VehicleTriangleVertices {
     VehicleVector value[3];
 };
@@ -37,6 +44,13 @@ struct VehicleCollisionTriangle {
     VehicleCollisionSurface *surface; /* +0x60 */
 };
 
+struct VehicleCollisionShape {
+    u8 unknown00[0x18];
+    u8 state18;
+    u8 state19;
+    u8 state1A;
+};
+
 typedef char VehicleCachedTriangleSizeCheck[sizeof(VehicleCachedTriangle) == 0x40 ? 1 : -1];
 
 /* Partial retail views: offsets checked against their owning functions.
@@ -54,7 +68,8 @@ struct RaceCarBoostState {
 
 struct VehiclePhysics {
     u32 vtable; /* +0x0 */
-    u8 unknown0004[0xAC];
+    u8 unknown0004[0x6C];
+    VehicleMatrix inverseTransform; /* +0x70 */
     VehicleVector speedSample; /* +0xB0 */
     u8 unknown00C0[0x110];
     VehicleVector queryExtents; /* +0x1D0 */
@@ -65,7 +80,8 @@ struct VehiclePhysics {
     u8 flag20E; /* +0x20E */
     u8 unknown020F;
     u8 flag210; /* +0x210 */
-    u8 unknown0211[5];
+    u8 unknown0211[4];
+    u8 bodyType; /* +0x215 */
     s8 currentUnit; /* +0x216, -1 is a valid no-unit result */
     s8 collisionWorld; /* +0x217 */
     u8 state218; /* +0x218 */
@@ -93,13 +109,19 @@ struct VehiclePhysics {
 
 /* These also guard offsets used by the inline quadword translation getter. */
 typedef char VehicleTransformOffsetCheck[(u32)&((VehiclePhysics *)0)->transform == 0x204 ? 1 : -1];
+typedef char VehicleMatrixSizeCheck[sizeof(VehicleMatrix) == 0x40 ? 1 : -1];
+typedef char VehicleInverseTransformOffsetCheck[(u32)&((VehiclePhysics *)0)->inverseTransform == 0x70 ? 1 : -1];
 typedef char VehicleCacheOffsetCheck[(u32)&((VehiclePhysics *)0)->triangleCache == 0x200 ? 1 : -1];
+typedef char VehicleBodyTypeOffsetCheck[(u32)&((VehiclePhysics *)0)->bodyType == 0x215 ? 1 : -1];
+typedef char VehicleShapeStatesOffsetCheck[(u32)&((VehicleCollisionShape *)0)->state18 == 0x18 ? 1 : -1];
 typedef char VehicleExtraTrianglesOffsetCheck[(u32)&((VehiclePhysics *)0)->extraTriangles == 0x11D0 ? 1 : -1];
 typedef char VehicleTransmissionOffsetCheck[(u32)&((VehiclePhysics *)0)->transmission == 0x1448 ? 1 : -1];
 typedef char VehicleRaceStateOffsetCheck[(u32)&((RaceCarBoostState *)0)->state1914 == 0x1914 ? 1 : -1];
 
 extern "C" {
 s32 func_001AB090(VehiclePhysics *, const VehicleCollisionTriangle *);
+void func_001AB610(VehiclePhysics *, const VehicleMatrix *);
+void func_001AD850(VehiclePhysics *);
 void func_001ABE40(VehiclePhysics *, u8);
 void func_001C0E80(VehiclePhysics *);
 void func_001C5040(VehiclePhysics *);
@@ -114,6 +136,7 @@ void func_001CC4C0(VehiclePhysics *, u32, void *);
 void func_001CC520(VehiclePhysics *, u32, void *);
 void func_001D17B0(VehiclePhysics *, f32);
 f32 func_001C6F90(CTransmission *, f32, f32, s32, s32);
+void func_002BAEE0(VehicleCollisionShape *);
 }
 
 #endif

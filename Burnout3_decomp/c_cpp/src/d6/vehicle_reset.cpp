@@ -2,6 +2,8 @@
 
 extern "C" void func_001CFD20(VehiclePhysics *);
 
+/* Retail Init path: initialize the base vehicle, then select four wheels.
+ * The historical filename predates verification of the base callee. */
 extern "C" void func_001C6EF0(VehiclePhysics *self)
 {
     func_001CFD20(self);

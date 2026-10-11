@@ -76,7 +76,7 @@ C_UNITS = {
     "d4/ustring": {"linked": False},  # 12 of 14 at 100%; ustrFromFloat, ustrFromFloatNoSep remain (docs/d4.md)
     # D6: vehicle physics and handling (docs/d6.md)
     "d6/transmission_init": {"linked": True},
-    "d6/transmission_rpm": {"linked": False},
+    "d6/transmission_rpm": {"linked": True},
     "d6/transmission_update": {"linked": False},
     "d6/vehicle_resource": {"linked": True},
     "d6/vehicle_shutdown": {"linked": True},
@@ -87,9 +87,12 @@ C_UNITS = {
     "d6/vehicle_activate": {"linked": True},
     "d6/vehicle_register": {"linked": True},
     "d6/vehicle_body_parts": {"linked": True},
-    "d6/vehicle_cache_append": {"linked": False},
+    "d6/vehicle_cache_append": {"linked": True},
     "d6/vehicle_collision_query": {"linked": False},
     "d6/vehicle_collision_filter": {"linked": False},
+    "d6/body_init": {"linked": True},
+    "d6/vehicle_transform": {"linked": True},
+    "d6/vehicle_collision_shape_init": {"linked": True},
     # D5: main loop and game flow (docs/d5.md)
     "d5/boot": {"linked": True},
     "d5/unit_00131AC0": {"linked": True},  # its .sdata (0.4f, 1.0f) stays in assembly for now
