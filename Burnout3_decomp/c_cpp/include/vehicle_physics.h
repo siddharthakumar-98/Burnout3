@@ -51,6 +51,22 @@ struct VehicleCollisionShape {
     u8 state1A;
 };
 
+struct VehicleWheel {
+    u8 unknown00[0x50];
+    f32 radius; /* +0x50 */
+    u8 unknown54[0x18];
+    f32 radiusScale; /* +0x6C */
+    f32 widthScale; /* +0x70 */
+    u8 unknown74[0x4C];
+};
+
+struct VehicleSuspension {
+    f32 attachHeight;
+    f32 dampingConstant;
+    f32 springConstant;
+    f32 springLength;
+};
+
 typedef char VehicleCachedTriangleSizeCheck[sizeof(VehicleCachedTriangle) == 0x40 ? 1 : -1];
 
 /* Partial retail views: offsets checked against their owning functions.
@@ -71,12 +87,16 @@ struct VehiclePhysics {
     u8 unknown0004[0x6C];
     VehicleMatrix inverseTransform; /* +0x70 */
     VehicleVector speedSample; /* +0xB0 */
-    u8 unknown00C0[0x110];
+    u8 unknown00C0[0x100];
+    VehicleVector boundingSphere; /* +0x1C0 */
     VehicleVector queryExtents; /* +0x1D0 */
-    u8 unknown01E0[0x20];
+    VehicleVector bounds1E0;
+    u8 unknown01F0[0x10];
     VehicleTriangleCache *triangleCache; /* +0x200 */
     Vec4 *transform; /* +0x204 */
-    u8 unknown0208[6];
+    VehicleCollisionShape *collisionShape; /* +0x208 */
+    u8 boundingVolume; /* +0x20C */
+    u8 unknown020D;
     u8 flag20E; /* +0x20E */
     u8 unknown020F;
     u8 flag210; /* +0x210 */
@@ -85,9 +105,19 @@ struct VehiclePhysics {
     s8 currentUnit; /* +0x216, -1 is a valid no-unit result */
     s8 collisionWorld; /* +0x217 */
     u8 state218; /* +0x218 */
-    u8 unknown0219[0xAAB];
+    u8 unknown0219[7];
+    VehicleCollisionShape shape; /* +0x220, prefix only */
+    u8 unknown023B[0x5E5];
+    VehicleWheel wheels[6]; /* +0x820 */
+    VehicleSuspension suspension[2]; /* +0xCA0 */
+    u8 unknown0CC0[4];
     u8 *bodyState; /* +0xCC4 */
-    u8 unknown0CC8[0x4A1];
+    VehicleMatrix *wheelMatrices[6]; /* +0xCC8 */
+    u8 unknown0CE0[0x480];
+    u16 collisionTag; /* +0x1160 */
+    u8 unknown1162[2];
+    f32 steeringAngle; /* +0x1164 */
+    u8 state1168;
     u8 state1169; /* +0x1169 */
     u8 state116A; /* +0x116A */
     u8 flag116B; /* +0x116B */
@@ -96,7 +126,8 @@ struct VehiclePhysics {
     VehicleCachedTriangle extraTriangles[6]; /* +0x11D0 */
     u8 unknown1350;
     u8 extraTrianglesEnabled; /* +0x1351 */
-    u8 unknown1352[0x82];
+    u8 flag1352;
+    u8 unknown1353[0x81];
     f32 boostMaxSpeed; /* +0x13D4 */
     u8 unknown13D8[0x1C];
     RaceCarBoostState *raceCar; /* +0x13F4 */
@@ -114,6 +145,15 @@ typedef char VehicleInverseTransformOffsetCheck[(u32)&((VehiclePhysics *)0)->inv
 typedef char VehicleCacheOffsetCheck[(u32)&((VehiclePhysics *)0)->triangleCache == 0x200 ? 1 : -1];
 typedef char VehicleBodyTypeOffsetCheck[(u32)&((VehiclePhysics *)0)->bodyType == 0x215 ? 1 : -1];
 typedef char VehicleShapeStatesOffsetCheck[(u32)&((VehicleCollisionShape *)0)->state18 == 0x18 ? 1 : -1];
+typedef char VehicleWheelSizeCheck[sizeof(VehicleWheel) == 0xC0 ? 1 : -1];
+typedef char VehicleSuspensionSizeCheck[sizeof(VehicleSuspension) == 0x10 ? 1 : -1];
+typedef char VehicleBoundingSphereOffsetCheck[(u32)&((VehiclePhysics *)0)->boundingSphere == 0x1C0 ? 1 : -1];
+typedef char VehicleShapeOffsetCheck[(u32)&((VehiclePhysics *)0)->shape == 0x220 ? 1 : -1];
+typedef char VehicleWheelsOffsetCheck[(u32)&((VehiclePhysics *)0)->wheels == 0x820 ? 1 : -1];
+typedef char VehicleSuspensionOffsetCheck[(u32)&((VehiclePhysics *)0)->suspension == 0xCA0 ? 1 : -1];
+typedef char VehicleWheelMatricesOffsetCheck[(u32)&((VehiclePhysics *)0)->wheelMatrices == 0xCC8 ? 1 : -1];
+typedef char VehicleCollisionTagOffsetCheck[(u32)&((VehiclePhysics *)0)->collisionTag == 0x1160 ? 1 : -1];
+typedef char VehicleFlag1352OffsetCheck[(u32)&((VehiclePhysics *)0)->flag1352 == 0x1352 ? 1 : -1];
 typedef char VehicleExtraTrianglesOffsetCheck[(u32)&((VehiclePhysics *)0)->extraTriangles == 0x11D0 ? 1 : -1];
 typedef char VehicleTransmissionOffsetCheck[(u32)&((VehiclePhysics *)0)->transmission == 0x1448 ? 1 : -1];
 typedef char VehicleRaceStateOffsetCheck[(u32)&((RaceCarBoostState *)0)->state1914 == 0x1914 ? 1 : -1];
@@ -132,6 +172,7 @@ void func_001CBC70(VehiclePhysics *, u8);
 void func_001CBCE0(VehiclePhysics *);
 void func_001CBD80(VehiclePhysics *, s32);
 void func_001CBE50(VehiclePhysics *, s32);
+void func_001CFD20(VehiclePhysics *);
 void func_001CC4C0(VehiclePhysics *, u32, void *);
 void func_001CC520(VehiclePhysics *, u32, void *);
 void func_001D17B0(VehiclePhysics *, f32);

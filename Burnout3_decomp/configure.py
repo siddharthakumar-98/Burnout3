@@ -91,6 +91,7 @@ C_UNITS = {
     "d6/vehicle_collision_query": {"linked": False},
     "d6/vehicle_collision_filter": {"linked": False},
     "d6/body_init": {"linked": True},
+    "d6/vehicle_init": {"linked": True},
     "d6/vehicle_transform": {"linked": True},
     "d6/vehicle_collision_shape_init": {"linked": True},
     # D5: main loop and game flow (docs/d5.md)
