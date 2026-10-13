@@ -89,7 +89,7 @@ C_UNITS = {
     "d6/vehicle_body_parts": {"linked": True},
     "d6/vehicle_cache_append": {"linked": True},
     "d6/vehicle_collision_query": {"linked": False},
-    "d6/vehicle_collision_filter": {"linked": False},
+    "d6/vehicle_collision_filter": {"linked": True},
     "d6/body_init": {"linked": True},
     "d6/vehicle_init": {"linked": True},
     "d6/vehicle_transform": {"linked": True},

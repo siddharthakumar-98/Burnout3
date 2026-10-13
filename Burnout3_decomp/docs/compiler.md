@@ -129,6 +129,14 @@ emits the wrong GPR (`qmtc2 a0`). Move it with `mfc1 v0, w` first, which also re
 `daddu v0,zero,zero` and hazard `nop` for a constant. No mwccps2 VU0 builtins are known. Whole `asm` functions stay
 for code no C shape reproduces.
 
+**Per-block asm volatility (D6, 2026-10-13).** `asm volatile { }` appears to apply to every inlined asm block in the
+function at once: either all of them are scheduling barriers or none are. b119 also accepts `.set asm_volatile` /
+`.set asm_nonvolatile` as the first line inside an `asm { }` block (found in the compiler's strings beside
+`reorder`/`noreorder`), and that sets barrier semantics block by block. Barrier blocks keep paired GPR/VU transfers
+(`qmfc2`/`qmtc2`) that plain blocks let the optimizer delete; non-barrier blocks let loads schedule across them. Mixing
+the two closed `func_001C5330`. FPR assignment followed where a load landed after scheduling, not declaration order.
+GCC-style case ranges (`case 2 ... 6:`) are accepted too.
+
 ## Flag shakedown (D4)
 
 `func_0027A900` (a D3 test, 74.38%) differs only in instruction order: the original loads a `.lit4` literal before a

@@ -28,7 +28,7 @@ static inline f32 RandomNorm(CTransmission *self)
  * object's byte view so gear -1 does not index outside a C++ array. */
 static inline f32 GearRatio(CTransmission *self, s32 gear)
 {
-    return *(const f32 *)((const u8 *)self + 4 + gear * 4);
+    return self->maGearRatioValues[gear];
 }
 
 static inline VehicleVector vehicleSpeed(register VehiclePhysics *physics)
@@ -48,8 +48,9 @@ static inline f32 SpeedMPH(VehiclePhysics *physics)
 /* Burnout 2's CTransmission algorithm with retail offsets and control flow.
  * The fourth argument is the driving-control boost bit; the fifth doubles
  * torque, with the caller deriving it from race-car +0x178C == 0.
- * Retained draft: 94.86%; redundant gear branch, idle-block placement and
- * remaining register/operand scheduling still prevent exact matching. */
+ * Retained draft: 95.13%. Open: retail keeps `slti at; bnez at` to the next
+ * instruction after the speed (gear guard), the idle||speed test block is placed
+ * after the rate arms, and the ratio*torque product's operands are swapped. */
 extern "C" f32 func_001C6F90(CTransmission *self, f32 accelerator, f32 wheelSpeed,
                             s32 boost, s32 doubleTorque)
 {
@@ -62,9 +63,10 @@ extern "C" f32 func_001C6F90(CTransmission *self, f32 accelerator, f32 wheelSpee
     }
     /* Ratios include reverse at index -1, contiguous with the forward array. */
     f32 targetSpeed = self->mnGearRatioFinalValue * (wheelSpeed * GearRatio(self, gear));
-    /* The retail code retains a redundant gear guard here. */
-    if (gear >= 2) {
-        targetSpeed = targetSpeed;
+    /* Forward gears recompute the same speed; retail keeps the guard's branch. */
+    if (gear > 1) {
+        f32 ratio = GearRatio(self, gear);
+        targetSpeed = self->mnGearRatioFinalValue * (wheelSpeed * ratio);
     }
     f32 idleSpeed = RPM_TO_RADS * self->mEngineIdleRPMValue;
     f32 changeDown = RPM_TO_RADS * self->mChangeDownRPMValue;
@@ -87,10 +89,10 @@ extern "C" f32 func_001C6F90(CTransmission *self, f32 accelerator, f32 wheelSpee
         self->mrLastChangeUpTime = self->mrLastChangeUpTime - upStep;
         f32 downStep = D_0052267C[0];
         self->mrLastChangeDownTime = self->mrLastChangeDownTime - downStep;
-        if (targetSpeed < changeDown && self->mnGear >= 2 && accelerator < 0.5f) {
+        if (targetSpeed < changeDown && self->mnGear > 1 && accelerator < 0.5f) {
             goto changeDownTimer;
         }
-        if (targetSpeed < changeDown * 0.75f && self->mnGear >= 2) {
+        if (targetSpeed < changeDown * 0.75f && self->mnGear > 1) {
         changeDownTimer:
             if (self->mrLastChangeUpTime <= 0.0f) {
                 self->mnGear--;
@@ -186,9 +188,10 @@ extern "C" f32 func_001C6F90(CTransmission *self, f32 accelerator, f32 wheelSpee
         }
     }
 
+    f32 peak = self->mrPeakTorqueRevs;
     f32 engineSpeed = self->mrEngineAngularVel;
     f32 torqueScale;
-    if (engineSpeed < self->mrPeakTorqueRevs) {
+    if (engineSpeed < peak) {
         torqueScale = (0.0f + 0.5f) + 0.5f * (engineSpeed / self->mrPeakTorqueRevs);
     } else if (engineSpeed > self->mrFallOffTorqueRevs) {
         torqueScale = (0.0f + 0.75f) +
@@ -212,9 +215,7 @@ extern "C" f32 func_001C6F90(CTransmission *self, f32 accelerator, f32 wheelSpee
         }
     }
     f32 random = RandomNorm(self);
-    f32 torque = accelerator * self->mEngineTorqueValue;
-    torque = torqueScale * torque;
-    torque = GearRatio(self, self->mnGear) * torque;
-    torque = self->mnGearRatioFinalValue * torque;
+    f32 torque = self->mnGearRatioFinalValue *
+                 (GearRatio(self, self->mnGear) * (torqueScale * (accelerator * self->mEngineTorqueValue)));
     return torque * ((0.0f + 0.95f) + 0.1f * random);
 }

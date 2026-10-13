@@ -2,7 +2,9 @@
 
 extern f32 D_004E0DC4; /* surface normal rejection threshold, -0.7 */
 
-/* The vector library carries scalar results in the low word of a quadword. */
+/* The vector library carries scalar results in the low word of a quadword.
+ * The VU0 blocks use `.set asm_volatile` (scheduling barriers, transfers
+ * kept); the normal store is a plain block the threshold load moves above. */
 struct CollisionScalar {
     union { __int128 bits; Vec4 value; };
     CollisionScalar() {}
@@ -16,7 +18,10 @@ struct CollisionScalar {
     {
         register __int128 value = bits;
         register f32 result;
-        asm volatile { mtc1 value, result }
+        asm {
+            .set asm_volatile
+            mtc1 value, result
+        }
         return result;
     }
 };
@@ -27,7 +32,8 @@ static inline CollisionScalar collisionProducts(register const Vec4 *a, register
 {
     CollisionScalar scalar;
     register __int128 bits;
-    asm volatile {
+    asm {
+        .set asm_volatile
         lqc2 vf3, 0(a)
         lqc2 vf2, 0(b)
         vaddw.x vf1, vf0, vf0w
@@ -43,7 +49,8 @@ static inline CollisionScalar collisionDot(register const Vec4 *a, register cons
     register __int128 unit = collisionProducts(a, b).bits;
     register __int128 bits;
     CollisionScalar result;
-    asm volatile {
+    asm {
+        .set asm_volatile
         vadday.x ACC, vf2, vf2y
         qmtc2.ni unit, vf1
         vmaddz.x vf1, vf1, vf2z
@@ -58,7 +65,8 @@ static inline VehicleVector triangleNormal(register const VehicleCollisionTriang
     VehicleVector normal;
     register __int128 bits = triangle->normal.bits;
     register VehicleVector *destination = &normal;
-    asm volatile { sq bits, 0(destination) }
+    /* Plain block: the threshold load is scheduled above this store. */
+    asm { sq bits, 0(destination) }
     return normal;
 }
 
@@ -72,7 +80,6 @@ static inline f32 normalY(const VehicleCollisionTriangle *triangle)
     return triangleNormalY(triangle);
 }
 
-/* Retained draft: 99.69%; only the normal-y/cutoff FPR allocation differs. */
 extern "C" s32 func_001C5330(const VehicleCollisionTriangle *triangle, VehiclePhysics *self)
 {
     u16 tag = triangle->surface->tag;
@@ -88,8 +95,7 @@ checkDirection:
     if (directional) goto dot;
 checkNormal:
     {
-        f32 cutoff = D_004E0DC4;
-        if (normalY(triangle) < cutoff) return 1;
+        if (normalY(triangle) < D_004E0DC4) return 1;
         goto append;
     }
 nondirectional:

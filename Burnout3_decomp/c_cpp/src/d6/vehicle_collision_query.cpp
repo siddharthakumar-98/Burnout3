@@ -76,17 +76,17 @@ static inline void querySphere(register Vec4 *sphere, register const Vec4 *posit
     }
 }
 
+/* Retained draft: 73.43%; frame 0x50 vs retail 0x120, and retail schedules integer code into
+ * the VU sequence while keeping the GPR bridges (volatile blocks keep bridges but block it). */
 extern "C" void func_001C5080(VehiclePhysics *self, s32 steps)
 {
     f32 travel;
-    if (self->raceCar->state1914) {
-        if (steps > 0) {
-            travel = querySpeed(&self->speedSample.value, D_0052267C[0], (f32)steps);
-        } else {
-            travel = 0.0f;
-        }
-    } else {
+    if (!self->raceCar->state1914) {
         travel = querySpeed(&self->speedSample.value, D_0052267C[0]);
+    } else if (steps > 0) {
+        travel = querySpeed(&self->speedSample.value, D_0052267C[0], (f32)steps);
+    } else {
+        travel = 0.0f;
     }
 
     Vec4 sphere;

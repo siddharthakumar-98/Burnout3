@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="406" viewBox="0 0 800 406" role="img" aria-label="PS2 game-source decompilation of SLUS_210.50: 147 of 5654 functions in matching C/C++">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="406" viewBox="0 0 800 406" role="img" aria-label="PS2 game-source decompilation of SLUS_210.50: 148 of 5654 functions in matching C/C++">
 <title>Burnout 3: Takedown - PS2 game-source decompilation progress</title>
 <rect width="800" height="406" fill="#0d1117"/>
-<text x="10.0" y="24.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#e6edf3" font-weight="700">147 of 5,654 game functions in matching C/C++</text>
-<text x="10.0" y="44.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">SLUS_210.50 (NTSC-U) &#183; 2.60% of functions &#183; 70 game functions named</text>
-<text x="790.0" y="37.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="30" fill="#ff4b3e" font-weight="800" text-anchor="end">0.82%</text>
+<text x="10.0" y="24.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#e6edf3" font-weight="700">148 of 5,654 game functions in matching C/C++</text>
+<text x="10.0" y="44.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">SLUS_210.50 (NTSC-U) &#183; 2.62% of functions &#183; 70 game functions named</text>
+<text x="790.0" y="37.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="30" fill="#ff4b3e" font-weight="800" text-anchor="end">0.83%</text>
 <text x="790.0" y="54.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8" text-anchor="end">of game code bytes matched</text>
 <rect x="10" y="65" width="10" height="10" rx="2" fill="#ff4b3e"/>
-<text x="26.0" y="74.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">matching C/C++ &#183; 22,056 B</text>
+<text x="26.0" y="74.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">matching C/C++ &#183; 22,312 B</text>
 <rect x="270" y="65" width="10" height="10" rx="2" fill="#2b1d22"/>
-<text x="286.0" y="74.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">pending game code &#183; 2,652,748 B</text>
+<text x="286.0" y="74.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8">pending game code &#183; 2,652,492 B</text>
 <rect x="10" y="88" width="780" height="200" fill="#161b22"/>
 <rect x="10.00" y="88.00" width="108.92" height="150.63" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_0015F270: 0 of 281,328 B matching C/C++, 0 of 154 functions, 0 named</title></rect>
 <rect x="10.00" y="238.63" width="108.92" height="49.37" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_00254C90: 0 of 92,196 B matching C/C++, 0 of 135 functions, 0 named</title></rect>
@@ -349,7 +349,7 @@
 <rect x="768.37" y="266.70" width="3.75" height="4.67" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_0026B7B0: 0 of 300 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
 <rect x="768.37" y="271.37" width="3.75" height="4.36" fill="#ff4b3e" stroke="#0d1117" stroke-width="0.6"><title>d6/vehicle_init: 280 of 280 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="768.37" y="275.73" width="3.75" height="4.36" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_003BC240: 0 of 280 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
-<rect x="768.37" y="280.09" width="3.75" height="3.99" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>d6/vehicle_collision_filter: 0 of 256 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
+<rect x="768.37" y="280.09" width="3.75" height="3.99" fill="#ff4b3e" stroke="#0d1117" stroke-width="0.6"><title>d6/vehicle_collision_filter: 256 of 256 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="768.37" y="284.08" width="3.75" height="3.92" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_0031CC90: 0 of 252 B matching C/C++, 0 of 3 functions, 0 named</title></rect>
 <rect x="772.12" y="266.70" width="3.70" height="3.91" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_002B6FF0: 0 of 248 B matching C/C++, 0 of 6 functions, 0 named</title></rect>
 <rect x="775.81" y="266.70" width="3.70" height="3.91" fill="#2b1d22" stroke="#0d1117" stroke-width="0.6"><title>game/unit_002F3A60: 0 of 248 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
@@ -421,7 +421,7 @@
 <rect x="789.05" y="287.51" width="0.95" height="0.49" fill="#ff4b3e" stroke="#0d1117" stroke-width="0.6"><title>d3/func_003EA7E0: 8 of 8 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <text x="10.0" y="314.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8" font-weight="700">GAME SOURCE &#183; 408 units in link order</text>
 <text x="10.0" y="334.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#e6edf3">Burnout 3: Takedown &#183; CodeWarrior 3.0.1 b119</text>
-<text x="790.0" y="334.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8" text-anchor="end">22,056 / 2,674,804 B matched</text>
+<text x="790.0" y="334.0" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a6adc8" text-anchor="end">22,312 / 2,674,804 B matched</text>
 <rect x="10.00" y="345" width="0.79" height="9" fill="#ff4b3e"><title>d5/boot: 960 of 960 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="10.79" y="345" width="1.45" height="9" fill="#33242a"><title>game/unit_0012EEF0: 0 of 4,272 B matching C/C++, 0 of 24 functions, 0 named</title></rect>
 <rect x="12.25" y="345" width="1.19" height="9" fill="#2b1d22"><title>game/unit_00130030: 0 of 2,964 B matching C/C++, 0 of 11 functions, 0 named</title></rect>
@@ -480,7 +480,7 @@
 <rect x="161.80" y="345" width="3.94" height="9" fill="#33242a"><title>game/unit_001C0F00: 0 of 16,692 B matching C/C++, 0 of 5 functions, 0 named</title></rect>
 <rect x="165.74" y="345" width="0.61" height="9" fill="#ff4b3e"><title>d6/vehicle_shutdown: 52 of 52 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="166.35" y="345" width="0.74" height="9" fill="#33242a"><title>d6/vehicle_collision_query: 0 of 684 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
-<rect x="167.08" y="345" width="0.65" height="9" fill="#2b1d22"><title>d6/vehicle_collision_filter: 0 of 256 B matching C/C++, 0 of 1 functions, 0 named</title></rect>
+<rect x="167.08" y="345" width="0.65" height="9" fill="#ff4b3e"><title>d6/vehicle_collision_filter: 256 of 256 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="167.73" y="345" width="1.97" height="9" fill="#33242a"><title>game/unit_001C5430: 0 of 6,840 B matching C/C++, 0 of 3 functions, 0 named</title></rect>
 <rect x="169.70" y="345" width="0.61" height="9" fill="#ff4b3e"><title>d6/vehicle_reset: 52 of 52 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
 <rect x="170.31" y="345" width="0.62" height="9" fill="#ff4b3e"><title>d6/transmission_rpm: 92 of 92 B matching C/C++, 1 of 1 functions, 0 named</title></rect>
